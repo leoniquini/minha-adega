@@ -1,0 +1,2181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a0a0e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Minha Adega">
+<meta name="description" content="Gestão de coleção de vinhos">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Minha Adega</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --wine-deep: #1a0a0e;
+    --wine-dark: #2d1017;
+    --wine-mid: #5c1a2e;
+    --wine-rich: #8b2a42;
+    --wine-accent: #c0392b;
+    --gold: #c9a84c;
+    --gold-light: #e8c97a;
+    --cream: #f5efe6;
+    --text-light: #f0e6d3;
+    --text-muted: #b09080;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background-color: var(--wine-deep);
+    color: var(--text-light);
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(92,26,46,0.3) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(139,42,66,0.2) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c9a84c' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; }
+
+  /* ── SETUP ── */
+  #setup-screen {
+    min-height: 100vh; display: flex;
+    align-items: center; justify-content: center; padding: 2rem;
+  }
+
+  .setup-card {
+    background: linear-gradient(145deg, rgba(45,16,23,0.95), rgba(26,10,14,0.98));
+    border: 1px solid rgba(201,168,76,0.3); border-radius: 2px;
+    padding: 3.5rem; width: 100%; max-width: 520px;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(201,168,76,0.2);
+  }
+
+  .setup-ornament { text-align: center; margin-bottom: 2rem; }
+  .setup-ornament svg { width: 60px; height: 60px; opacity: 0.7; }
+
+  .setup-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.4rem; font-weight: 300; text-align: center;
+    color: var(--gold-light); letter-spacing: 0.05em; margin-bottom: 0.4rem;
+  }
+  .setup-subtitle {
+    text-align: center; font-size: 0.72rem; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--text-muted); margin-bottom: 2.5rem;
+  }
+
+  .divider { display: flex; align-items: center; gap: 1rem; margin-bottom: 2.5rem; }
+  .divider::before, .divider::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(201,168,76,0.4), transparent);
+  }
+  .divider span { color: var(--gold); font-size: 0.9rem; opacity: 0.6; }
+
+  /* Cellar list on setup */
+  .cellar-list { margin-bottom: 1.5rem; }
+  .cellar-list-title {
+    font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--gold); opacity: 0.85; margin-bottom: 0.7rem;
+  }
+  .cellar-list-items { display: flex; flex-direction: column; gap: 0.5rem; }
+  .cellar-list-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(201,168,76,0.2); border-radius: 1px;
+    padding: 0.65rem 1rem; cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .cellar-list-item:hover { background: rgba(201,168,76,0.07); border-color: rgba(201,168,76,0.4); }
+  .cellar-list-item-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem; color: var(--gold-light);
+  }
+  .cellar-list-item-meta { font-size: 0.6rem; color: var(--text-muted); letter-spacing: 0.08em; }
+  .cellar-list-item-del {
+    background: none; border: none; color: rgba(255,80,80,0.35);
+    font-size: 0.85rem; cursor: pointer; padding: 4px 6px;
+    transition: color 0.2s; line-height: 1;
+  }
+  .cellar-list-item-del:hover { color: rgba(255,100,100,0.8); }
+
+  .field-group { margin-bottom: 1.5rem; }
+
+  label {
+    display: block; font-size: 0.68rem; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 0.6rem; opacity: 0.85;
+  }
+
+  input[type="text"], input[type="number"], select {
+    width: 100%; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(201,168,76,0.25); border-radius: 1px;
+    color: var(--cream); font-family: 'Montserrat', sans-serif;
+    font-weight: 300; font-size: 0.9rem; padding: 0.75rem 1rem;
+    outline: none; transition: border-color 0.3s, background 0.3s;
+    appearance: none; -webkit-appearance: none;
+  }
+  input[type="text"]:focus, input[type="number"]:focus, select:focus {
+    border-color: rgba(201,168,76,0.6); background: rgba(255,255,255,0.07);
+  }
+  input::placeholder { color: rgba(176,144,128,0.5); }
+  select option { background: var(--wine-dark); color: var(--cream); }
+
+  .row-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+  .btn-primary {
+    width: 100%; padding: 1rem;
+    background: linear-gradient(135deg, var(--wine-mid), var(--wine-rich));
+    border: 1px solid rgba(201,168,76,0.4); border-radius: 1px;
+    color: var(--gold-light); font-family: 'Montserrat', sans-serif;
+    font-size: 0.75rem; font-weight: 500; letter-spacing: 0.2em;
+    text-transform: uppercase; cursor: pointer; transition: all 0.3s; margin-top: 0.5rem;
+  }
+  .btn-primary:hover {
+    background: linear-gradient(135deg, var(--wine-rich), var(--wine-accent));
+    box-shadow: 0 0 30px rgba(139,42,66,0.5); transform: translateY(-1px);
+  }
+
+  /* ── CELLAR SCREEN ── */
+  #cellar-screen { display: none; padding: 1.5rem 2rem; min-height: 100vh; }
+
+  .cellar-header {
+    display: flex; align-items: center;
+    margin-bottom: 1.5rem; padding-bottom: 1.2rem;
+    border-bottom: 1px solid rgba(201,168,76,0.2);
+  }
+  .cellar-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.4rem; font-weight: 300; color: var(--gold-light);
+    letter-spacing: 0.04em; line-height: 1;
+  }
+  .cellar-stats {
+    font-size: 0.65rem; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--text-muted); margin-top: 0.3rem;
+  }
+
+  /* Firebase sync bar */
+  .fb-bar {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0 0.4rem;
+    border-right: 1px solid rgba(201,168,76,0.15);
+    margin-right: 0.2rem;
+  }
+  .fb-status {
+    font-size: 0.6rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .fb-user {
+    font-size: 0.62rem; color: var(--gold);
+    max-width: 120px; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  /* Bottom controls bar */
+  .bottom-controls {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 1.2rem; padding: 1rem 1.5rem;
+    background: rgba(26,10,14,0.6);
+    border: 1px solid rgba(201,168,76,0.15); border-radius: 2px;
+    flex-wrap: wrap; gap: 0.8rem;
+  }
+  .bottom-controls-right {
+    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  }
+
+  .zoom-controls {
+    display: flex; align-items: center;
+    border: 1px solid rgba(201,168,76,0.3); border-radius: 2px; overflow: hidden;
+  }
+  .zoom-btn {
+    background: rgba(255,255,255,0.03); border: none; color: var(--gold);
+    font-size: 1.1rem; width: 34px; height: 34px; cursor: pointer;
+    transition: background 0.2s; display: flex; align-items: center; justify-content: center;
+  }
+  .zoom-btn:hover { background: rgba(201,168,76,0.18); }
+  .zoom-label {
+    border-left: 1px solid rgba(201,168,76,0.2);
+    border-right: 1px solid rgba(201,168,76,0.2);
+    color: var(--text-muted); font-size: 0.62rem; letter-spacing: 0.08em;
+    padding: 0 8px; height: 34px; min-width: 52px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .btn-secondary {
+    padding: 0 1rem; height: 34px; background: transparent;
+    border: 1px solid rgba(201,168,76,0.35); border-radius: 1px; color: var(--gold);
+    font-family: 'Montserrat', sans-serif; font-size: 0.62rem; font-weight: 400;
+    letter-spacing: 0.13em; text-transform: uppercase; cursor: pointer;
+    transition: all 0.3s; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 0.3rem;
+  }
+  .btn-secondary:hover { background: rgba(201,168,76,0.1); border-color: rgba(201,168,76,0.6); }
+  .btn-highlight {
+    border-color: rgba(201,168,76,0.55); color: var(--gold-light);
+  }
+
+  /* ── RACK ── */
+  .rack-container {
+    background: linear-gradient(180deg, rgba(45,16,23,0.5) 0%, rgba(26,10,14,0.7) 100%);
+    border: 1px solid rgba(201,168,76,0.15); border-radius: 2px; padding: 2rem;
+    box-shadow: inset 0 2px 20px rgba(0,0,0,0.4); overflow-x: auto;
+  }
+  .wine-rack {
+    display: inline-flex; flex-direction: column;
+    gap: var(--slot-gap, 10px); min-width: max-content;
+  }
+  .rack-row { display: flex; gap: var(--slot-gap, 10px); align-items: center; }
+
+  /* ── BOTTLE SLOT ── */
+  .bottle-slot {
+    width: var(--slot-size, 60px); height: var(--slot-size, 60px);
+    border-radius: 50%; cursor: pointer; position: relative;
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.5s; flex-shrink: 0;
+  }
+  .bottle-slot:hover { transform: scale(1.1); z-index: 5; }
+
+  .bottle-slot.empty {
+    background: radial-gradient(circle at 38% 35%,
+      rgba(92,26,46,0.6) 0%, rgba(45,16,23,0.9) 50%, rgba(15,5,8,0.95) 100%);
+    border: 2px dashed rgba(201,168,76,0.2);
+    box-shadow: inset 0 4px 12px rgba(0,0,0,0.6);
+  }
+  .bottle-slot.empty:hover {
+    border-color: rgba(201,168,76,0.5);
+    box-shadow: inset 0 4px 12px rgba(0,0,0,0.5), 0 0 16px rgba(139,42,66,0.3);
+  }
+  .plus-icon {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: calc(var(--slot-size, 60px) * 0.36);
+    color: rgba(201,168,76,0.22); font-weight: 300;
+    transition: color 0.2s; pointer-events: none;
+  }
+  .bottle-slot.empty:hover .plus-icon { color: rgba(201,168,76,0.6); }
+
+  .bottle-slot.filled {
+    border: 2px solid rgba(201,168,76,0.4);
+    box-shadow: inset 0 4px 16px rgba(0,0,0,0.5),
+                inset 2px 2px 6px rgba(255,255,255,0.1),
+                0 4px 12px rgba(0,0,0,0.4);
+  }
+  .bottle-slot.filled::before {
+    content: ''; position: absolute; inset: 0; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.15) 0%, transparent 50%);
+    z-index: 2; pointer-events: none;
+  }
+  .bottle-slot.filled::after {
+    content: ''; position: absolute; inset: 8px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.12); z-index: 1; pointer-events: none;
+  }
+
+  .bottle-slot.tinto     { background: radial-gradient(circle at 38% 35%, #e03050 0%, #b01030 40%, #6a0010 100%); }
+  .bottle-slot.branco    { background: radial-gradient(circle at 38% 35%, #ffe066 0%, #e8c020 40%, #a07800 100%); }
+  .bottle-slot.rose      { background: radial-gradient(circle at 38% 35%, #ff80a0 0%, #e84070 40%, #a01040 100%); }
+  .bottle-slot.espumante { background: radial-gradient(circle at 38% 35%, #80d880 0%, #40b040 40%, #106810 100%); }
+  .bottle-slot.doce      { background: radial-gradient(circle at 38% 35%, #c08050 0%, #906030 40%, #503010 100%); }
+
+  /* Consume fade animation */
+  .bottle-slot.consuming {
+    animation: consumeAnim 0.7s ease forwards;
+  }
+  @keyframes consumeAnim {
+    0%   { transform: scale(1);    opacity: 1; }
+    40%  { transform: scale(1.15); opacity: 0.8; }
+    100% { transform: scale(0);    opacity: 0; }
+  }
+
+  .score-badge {
+    position: absolute; bottom: 4px; right: 4px;
+    background: rgba(201,168,76,0.92); color: var(--wine-deep);
+    font-size: calc(var(--slot-size, 60px) * 0.12);
+    font-weight: 700; padding: 1px 3px; border-radius: 20px;
+    z-index: 3; line-height: 1.4; white-space: nowrap;
+  }
+
+  /* Global floating tooltip */
+  #wine-tooltip {
+    display: none;
+    position: fixed;
+    z-index: 999;
+    pointer-events: none;
+    background: linear-gradient(160deg, rgba(38,14,20,0.99), rgba(20,8,12,0.99));
+    border: 1px solid rgba(201,168,76,0.35);
+    border-radius: 3px;
+    padding: 0.75rem 0.95rem;
+    min-width: 175px;
+    max-width: 240px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.7);
+    animation: tipIn 0.12s ease;
+  }
+  #wine-tooltip.visible { display: block; }
+  @keyframes tipIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .tooltip-type-bar {
+    height: 2px; border-radius: 1px; margin-bottom: 0.6rem; width: 100%;
+  }
+  .tooltip-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem; font-weight: 400; color: var(--gold-light);
+    display: block; margin-bottom: 0.5rem; line-height: 1.2;
+    white-space: normal;
+  }
+  .tooltip-row {
+    display: flex; align-items: baseline; gap: 0.45rem;
+    font-size: 0.6rem; letter-spacing: 0.08em;
+    text-transform: uppercase; line-height: 1.9;
+  }
+  .tooltip-row-label { color: rgba(176,144,128,0.55); min-width: 52px; flex-shrink: 0; }
+  .tooltip-row-value { color: var(--cream); white-space: normal; }
+  .tooltip-divider { height: 1px; background: rgba(201,168,76,0.12); margin: 0.45rem 0; }
+  .tooltip-scores { display: flex; flex-direction: column; }
+
+  /* Legend */
+  .legend {
+    display: flex; gap: 1.2rem; flex-wrap: wrap;
+    margin-top: 1.2rem; padding-top: 1rem;
+    border-top: 1px solid rgba(201,168,76,0.1); justify-content: center;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 0.45rem;
+    font-size: 0.62rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-muted);
+  }
+  .legend-dot {
+    width: 13px; height: 13px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0;
+  }
+
+  /* ── MODAL BASE ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(10,3,6,0.85); z-index: 300;
+    align-items: center; justify-content: center;
+    padding: 1rem; backdrop-filter: blur(4px);
+  }
+  .modal-overlay.active { display: flex; }
+
+  .modal {
+    background: linear-gradient(145deg, rgba(45,16,23,0.98), rgba(26,10,14,0.99));
+    border: 1px solid rgba(201,168,76,0.3); border-radius: 2px;
+    padding: 2.2rem 2.5rem; width: 100%; max-width: 540px;
+    max-height: 92vh; overflow-y: auto;
+    box-shadow: 0 50px 100px rgba(0,0,0,0.7), inset 0 1px 0 rgba(201,168,76,0.15);
+    animation: modalIn 0.28s ease;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(18px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .modal-header {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; margin-bottom: 1.8rem;
+  }
+  .modal-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.75rem; font-weight: 300; color: var(--gold-light); letter-spacing: 0.04em;
+  }
+  .modal-pos {
+    font-size: 0.62rem; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--text-muted); margin-top: 0.2rem;
+  }
+  .btn-close {
+    background: none; border: none; color: var(--text-muted);
+    font-size: 1.4rem; cursor: pointer; padding: 0;
+    line-height: 1; transition: color 0.2s; flex-shrink: 0;
+  }
+  .btn-close:hover { color: var(--gold); }
+
+  /* Wine type selector */
+  .type-selector { display: flex; gap: 0.45rem; flex-wrap: wrap; margin-top: 0.5rem; }
+  .type-btn {
+    flex: 1; min-width: 68px; padding: 0.5rem 0.35rem; border-radius: 1px;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03);
+    color: var(--text-muted); font-family: 'Montserrat', sans-serif;
+    font-size: 0.63rem; font-weight: 400; letter-spacing: 0.09em;
+    text-transform: uppercase; cursor: pointer; transition: all 0.22s; text-align: center;
+  }
+  .type-btn:hover { background: rgba(255,255,255,0.07); color: var(--cream); }
+  .type-btn[data-type="tinto"].active     { background: #b01030; border-color: #b01030; color: #fff; }
+  .type-btn[data-type="branco"].active    { background: #c8a820; border-color: #c8a820; color: var(--wine-deep); }
+  .type-btn[data-type="rose"].active      { background: #d04060; border-color: #d04060; color: #fff; }
+  .type-btn[data-type="espumante"].active { background: #3a9040; border-color: #3a9040; color: #fff; }
+  .type-btn[data-type="doce"].active      { background: #805030; border-color: #805030; color: #fff; }
+
+  /* Scores */
+  .scores-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.8rem; }
+  .score-row {
+    display: flex; align-items: center; gap: 0.6rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(201,168,76,0.15); border-radius: 1px; padding: 0.5rem 0.75rem;
+  }
+  .score-row-critic {
+    font-size: 0.6rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--gold); flex: 1; white-space: nowrap;
+  }
+  .score-row-value {
+    font-family: 'Cormorant Garamond', serif; font-size: 1.15rem; color: var(--cream);
+    min-width: 34px; text-align: right;
+  }
+  .btn-score-del {
+    background: none; border: none; color: rgba(255,80,80,0.4);
+    font-size: 0.85rem; cursor: pointer; padding: 0 2px; transition: color 0.2s; line-height: 1;
+  }
+  .btn-score-del:hover { color: rgba(255,100,100,0.9); }
+  .no-scores-msg { font-size: 0.63rem; color: var(--text-muted); letter-spacing: 0.08em; padding: 0.2rem 0; }
+  .add-score-row { display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap; }
+  .add-score-select-wrap { flex: 1; min-width: 130px; }
+  .add-score-input-wrap { width: 82px; }
+  .btn-add-score {
+    padding: 0 1rem; height: 40px; background: rgba(201,168,76,0.1);
+    border: 1px solid rgba(201,168,76,0.35); border-radius: 1px; color: var(--gold-light);
+    font-family: 'Montserrat', sans-serif; font-size: 0.62rem; font-weight: 500;
+    letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
+    transition: all 0.22s; white-space: nowrap;
+  }
+  .btn-add-score:hover { background: rgba(201,168,76,0.22); border-color: rgba(201,168,76,0.6); }
+
+  /* Modal actions */
+  .modal-actions { display: flex; gap: 0.6rem; margin-top: 1.6rem; flex-wrap: wrap; }
+  .btn-save {
+    flex: 1; min-width: 100px; padding: 0.85rem;
+    background: linear-gradient(135deg, var(--wine-mid), var(--wine-rich));
+    border: 1px solid rgba(201,168,76,0.4); border-radius: 1px; color: var(--gold-light);
+    font-family: 'Montserrat', sans-serif; font-size: 0.72rem; font-weight: 500;
+    letter-spacing: 0.18em; text-transform: uppercase; cursor: pointer; transition: all 0.3s;
+  }
+  .btn-save:hover {
+    background: linear-gradient(135deg, var(--wine-rich), var(--wine-accent));
+    box-shadow: 0 0 25px rgba(139,42,66,0.5);
+  }
+  .btn-consume {
+    padding: 0.85rem 1rem; background: transparent;
+    border: 1px solid rgba(201,168,76,0.4); border-radius: 1px; color: var(--gold);
+    font-family: 'Montserrat', sans-serif; font-size: 0.72rem; font-weight: 400;
+    letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: all 0.3s;
+  }
+  .btn-consume:hover {
+    background: rgba(201,168,76,0.1); border-color: var(--gold);
+  }
+  .btn-transfer {
+    padding: 0.85rem 1rem; background: transparent;
+    border: 1px solid rgba(100,160,255,0.3); border-radius: 1px; color: rgba(150,200,255,0.8);
+    font-family: 'Montserrat', sans-serif; font-size: 0.72rem; font-weight: 400;
+    letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: all 0.3s;
+  }
+  .btn-transfer:hover { background: rgba(100,160,255,0.08); border-color: rgba(100,160,255,0.6); }
+  .btn-remove {
+    padding: 0.85rem 1rem; background: transparent;
+    border: 1px solid rgba(255,80,80,0.2); border-radius: 1px; color: rgba(255,100,100,0.6);
+    font-family: 'Montserrat', sans-serif; font-size: 0.72rem; font-weight: 400;
+    letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: all 0.3s;
+  }
+  .btn-remove:hover { background: rgba(255,80,80,0.08); border-color: rgba(255,80,80,0.5); color: rgba(255,120,120,0.9); }
+
+  /* ── TRANSFER MODAL ── */
+  .transfer-modal { max-width: 420px; }
+  .transfer-wine-name {
+    font-family: 'Cormorant Garamond', serif; font-size: 1.3rem;
+    color: var(--gold-light); margin-bottom: 1.2rem;
+    padding-bottom: 0.8rem; border-bottom: 1px solid rgba(201,168,76,0.15);
+  }
+  .transfer-cellar-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.2rem; }
+  .transfer-cellar-btn {
+    padding: 0.8rem 1rem; background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(201,168,76,0.2); border-radius: 1px; color: var(--cream);
+    font-family: 'Montserrat', sans-serif; font-size: 0.75rem; font-weight: 300;
+    letter-spacing: 0.08em; text-align: left; cursor: pointer; transition: all 0.22s;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .transfer-cellar-btn:hover {
+    background: rgba(201,168,76,0.1); border-color: rgba(201,168,76,0.45);
+    color: var(--gold-light);
+  }
+  .transfer-cellar-meta { font-size: 0.58rem; color: var(--text-muted); letter-spacing: 0.1em; }
+
+  /* ── HELP MODAL ── */
+  .help-modal { max-width: 560px; }
+  .help-section { margin-bottom: 1.4rem; }
+  .help-section-title {
+    font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 0.6rem; opacity: 0.9;
+  }
+  .help-section p {
+    font-size: 0.8rem; line-height: 1.75; color: var(--text-muted);
+    letter-spacing: 0.02em;
+  }
+  .help-section p + p { margin-top: 0.5rem; }
+  .help-divider {
+    height: 1px; background: rgba(201,168,76,0.1); margin: 1.2rem 0;
+  }
+  .help-step {
+    display: flex; gap: 0.8rem; align-items: flex-start; margin-bottom: 0.6rem;
+  }
+  .help-step-num {
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.3);
+    color: var(--gold); font-size: 0.65rem; font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .help-step p { font-size: 0.78rem; line-height: 1.6; color: var(--text-muted); }
+  .help-step strong { color: var(--cream); font-weight: 500; }
+
+  /* ── FILTER BAR ── */
+  .filter-bar {
+    display: flex; align-items: center; gap: 0.6rem;
+    margin-bottom: 1rem; flex-wrap: wrap;
+    padding: 1rem 1.2rem;
+    background: rgba(26,10,14,0.55);
+    border: 1px solid rgba(201,168,76,0.15); border-radius: 2px;
+  }
+
+  .filter-search-wrap {
+    position: relative; flex: 1; min-width: 160px;
+  }
+  .filter-icon {
+    position: absolute; left: 0.75rem; top: 50%;
+    transform: translateY(-50%); font-size: 0.8rem; pointer-events: none;
+    opacity: 0.5;
+  }
+  .filter-input {
+    width: 100%; padding: 0.55rem 0.75rem 0.55rem 2.1rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(201,168,76,0.22); border-radius: 1px;
+    color: var(--cream); font-family: 'Montserrat', sans-serif;
+    font-size: 0.8rem; font-weight: 300; outline: none;
+    transition: border-color 0.25s, background 0.25s;
+  }
+  .filter-input:focus {
+    border-color: rgba(201,168,76,0.55); background: rgba(255,255,255,0.07);
+  }
+  .filter-input::placeholder { color: rgba(176,144,128,0.45); font-size: 0.75rem; }
+
+  .filter-select {
+    padding: 0.55rem 0.8rem; min-width: 130px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(201,168,76,0.22); border-radius: 1px;
+    color: var(--cream); font-family: 'Montserrat', sans-serif;
+    font-size: 0.75rem; font-weight: 300; outline: none;
+    cursor: pointer; transition: border-color 0.25s;
+    appearance: none; -webkit-appearance: none;
+  }
+  .filter-select:focus { border-color: rgba(201,168,76,0.55); }
+  .filter-select option, .filter-select optgroup { background: var(--wine-dark); color: var(--cream); }
+
+  .filter-types {
+    display: flex; gap: 0.35rem; flex-wrap: wrap;
+  }
+  .filter-type-btn {
+    padding: 0.45rem 0.7rem; border-radius: 1px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03); color: var(--text-muted);
+    font-family: 'Montserrat', sans-serif; font-size: 0.62rem;
+    font-weight: 400; letter-spacing: 0.07em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  .filter-type-btn:hover { background: rgba(255,255,255,0.07); color: var(--cream); }
+  .filter-type-btn.active                          { border-color: rgba(201,168,76,0.6); color: var(--gold-light); background: rgba(201,168,76,0.15); }
+  .filter-type-btn[data-type="tinto"].active       { background: rgba(176,16,48,0.35);  border-color: #b01030; color: #ff8090; }
+  .filter-type-btn[data-type="branco"].active      { background: rgba(200,168,32,0.3);  border-color: #c8a820; color: #ffe090; }
+  .filter-type-btn[data-type="rose"].active        { background: rgba(208,64,96,0.3);   border-color: #d04060; color: #ffaabb; }
+  .filter-type-btn[data-type="espumante"].active   { background: rgba(58,144,64,0.3);   border-color: #3a9040; color: #90e890; }
+  .filter-type-btn[data-type="doce"].active        { background: rgba(128,80,48,0.35);  border-color: #805030; color: #d4a060; }
+
+  .filter-clear-btn {
+    padding: 0.45rem 0.8rem; border-radius: 1px;
+    border: 1px solid rgba(255,80,80,0.25);
+    background: transparent; color: rgba(255,120,120,0.65);
+    font-family: 'Montserrat', sans-serif; font-size: 0.62rem;
+    font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  .filter-clear-btn:hover {
+    background: rgba(255,80,80,0.08); border-color: rgba(255,80,80,0.5);
+    color: rgba(255,140,140,0.9);
+  }
+
+  /* Results info bar */
+  .filter-results-bar {
+    font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--gold); opacity: 0.8;
+    padding: 0 0.2rem 0.7rem;
+  }
+
+  /* Dimmed slot when filtered out */
+  .bottle-slot.dimmed {
+    opacity: 0.12;
+    pointer-events: none;
+    transform: none !important;
+  }
+
+  textarea {
+    width: 100%; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(201,168,76,0.25); border-radius: 1px;
+    color: var(--cream); font-family: 'Montserrat', sans-serif;
+    font-weight: 300; font-size: 0.85rem; padding: 0.75rem 1rem;
+    outline: none; resize: vertical; min-height: 70px;
+    transition: border-color 0.3s, background 0.3s;
+    line-height: 1.6;
+  }
+  textarea:focus { border-color: rgba(201,168,76,0.6); background: rgba(255,255,255,0.07); }
+  textarea::placeholder { color: rgba(176,144,128,0.45); font-size: 0.78rem; }
+
+  .btn-move {
+    padding: 0.85rem 1rem; background: transparent;
+    border: 1px solid rgba(100,200,255,0.3); border-radius: 1px;
+    color: rgba(150,210,255,0.8);
+    font-family: 'Montserrat', sans-serif; font-size: 0.72rem; font-weight: 400;
+    letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: all 0.3s;
+  }
+  .btn-move:hover { background: rgba(100,200,255,0.08); border-color: rgba(100,200,255,0.6); }
+
+  /* Move mode banner */
+  #move-banner {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    animation: slideDown 0.25s ease;
+  }
+  @keyframes slideDown {
+    from { transform: translateY(-100%); opacity: 0; }
+    to   { transform: translateY(0);     opacity: 1; }
+  }
+  .move-banner-inner {
+    display: flex; align-items: center; justify-content: center; gap: 1.5rem;
+    background: linear-gradient(135deg, rgba(92,26,46,0.97), rgba(45,16,23,0.98));
+    border-bottom: 1px solid rgba(201,168,76,0.4);
+    padding: 0.9rem 2rem;
+    font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--gold-light); box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  .move-cancel-btn {
+    background: transparent; border: 1px solid rgba(255,100,100,0.4); border-radius: 1px;
+    color: rgba(255,130,130,0.8); font-family: 'Montserrat', sans-serif;
+    font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 0.3rem 0.8rem; cursor: pointer; transition: all 0.2s;
+  }
+  .move-cancel-btn:hover { background: rgba(255,100,100,0.1); border-color: rgba(255,130,130,0.7); color: #ff9090; }
+
+  /* Slot states during move mode */
+  .bottle-slot.move-target {
+    border: 2px dashed rgba(100,210,255,0.7) !important;
+    box-shadow: 0 0 14px rgba(100,210,255,0.35) !important;
+    animation: movePulse 1.2s ease-in-out infinite;
+    cursor: crosshair !important;
+  }
+  @keyframes movePulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(100,210,255,0.3); }
+    50%       { box-shadow: 0 0 20px rgba(100,210,255,0.6); }
+  }
+  .bottle-slot.move-source {
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.7), inset 0 4px 16px rgba(0,0,0,0.5) !important;
+    opacity: 0.75;
+    cursor: not-allowed !important;
+  }
+  .bottle-slot.move-blocked {
+    opacity: 0.25; cursor: not-allowed !important; pointer-events: none;
+  }
+
+  .btn-copy {
+    padding: 0.85rem 1rem; background: transparent;
+    border: 1px solid rgba(201,168,76,0.35); border-radius: 1px;
+    color: var(--gold); font-family: 'Montserrat', sans-serif;
+    font-size: 0.72rem; font-weight: 400; letter-spacing: 0.12em;
+    text-transform: uppercase; cursor: pointer; transition: all 0.3s;
+  }
+  .btn-copy:hover { background: rgba(201,168,76,0.1); border-color: var(--gold); }
+
+  /* Chart styles */
+  .chart-wrap { width: 100%; overflow-x: auto; padding-bottom: 0.5rem; }
+  .chart-svg-wrap { min-width: 320px; }
+  .chart-bar { transition: opacity 0.2s; cursor: default; }
+  .chart-bar:hover { opacity: 0.8; }
+  .chart-legend {
+    display: flex; flex-wrap: wrap; gap: 0.6rem 1.2rem;
+    margin-top: 1.2rem; padding-top: 1rem;
+    border-top: 1px solid rgba(201,168,76,0.12);
+  }
+  .chart-legend-item {
+    display: flex; align-items: center; gap: 0.4rem;
+    font-size: 0.6rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-muted);
+  }
+  .chart-legend-dot {
+    width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0;
+  }
+  .chart-urgency-label {
+    font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-muted); margin-top: 1rem; line-height: 1.7;
+  }
+  .chart-urgency-label strong { color: var(--cream); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+  ::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.3); border-radius: 2px; }
+
+  @media (max-width: 500px) {
+    .setup-card { padding: 2rem 1.5rem; }
+    .rack-container { padding: 1rem; }
+    .modal { padding: 1.6rem 1.2rem; }
+    .cellar-name { font-size: 1.8rem; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ══ SETUP SCREEN ══ -->
+  <div id="setup-screen">
+    <div class="setup-card">
+      <div class="setup-ornament">
+        <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M30 8 C24 8 20 14 20 22 L20 28 C20 32 22 35 26 36 L26 52 L34 52 L34 36 C38 35 40 32 40 28 L40 22 C40 14 36 8 30 8Z" stroke="#c9a84c" stroke-width="1" fill="rgba(139,42,66,0.3)"/>
+          <path d="M22 24 L38 24" stroke="#c9a84c" stroke-width="0.8" opacity="0.5"/>
+          <circle cx="30" cy="4" r="2.5" fill="#c9a84c" opacity="0.7"/>
+          <path d="M15 52 L45 52" stroke="#c9a84c" stroke-width="1.2" opacity="0.4"/>
+        </svg>
+      </div>
+      <h1 class="setup-title">Minha Adega</h1>
+      <p class="setup-subtitle">Gestão de coleção de vinhos</p>
+      <div class="divider"><span>✦</span></div>
+
+      <!-- Saved cellars list -->
+      <div class="cellar-list" id="saved-cellars-section" style="display:none">
+        <div class="cellar-list-title">Adegas salvas</div>
+        <div class="cellar-list-items" id="saved-cellars-list"></div>
+        <div style="height:1px;background:rgba(201,168,76,0.15);margin:1.2rem 0"></div>
+      </div>
+
+      <div class="field-group">
+        <label>Nome da nova adega</label>
+        <input type="text" id="cellar-name-input" placeholder="Ex.: Adega Família Rossi" maxlength="50">
+      </div>
+      <div class="row-cols">
+        <div class="field-group">
+          <label>Linhas</label>
+          <input type="number" id="rows-input" value="25" min="1" max="50">
+        </div>
+        <div class="field-group">
+          <label>Colunas</label>
+          <input type="number" id="cols-input" value="30" min="1" max="50">
+        </div>
+      </div>
+      <button class="btn-primary" onclick="createCellar()">Criar Nova Adega</button>
+    </div>
+  </div>
+
+  <!-- ══ CELLAR SCREEN ══ -->
+  <div id="cellar-screen">
+    <div class="cellar-header">
+      <div>
+        <div class="cellar-name" id="cellar-display-name">Minha Adega</div>
+        <div class="cellar-stats" id="cellar-stats"></div>
+      </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <div class="filter-search-wrap">
+        <span class="filter-icon">🔍</span>
+        <input type="text" id="f-name" class="filter-input" placeholder="Buscar por nome..." oninput="applyFilters()">
+      </div>
+      <select id="f-vintage" class="filter-select" onchange="applyFilters()">
+        <option value="">Todos os anos</option>
+      </select>
+      <select id="f-country" class="filter-select" onchange="applyFilters()">
+        <option value="">Todos os países</option>
+        <optgroup label="Europa">
+          <option value="França">🇫🇷 França</option>
+          <option value="Itália">🇮🇹 Itália</option>
+          <option value="Espanha">🇪🇸 Espanha</option>
+          <option value="Portugal">🇵🇹 Portugal</option>
+          <option value="Alemanha">🇩🇪 Alemanha</option>
+          <option value="Áustria">🇦🇹 Áustria</option>
+          <option value="Grécia">🇬🇷 Grécia</option>
+          <option value="Hungria">🇭🇺 Hungria</option>
+          <option value="Suíça">🇨🇭 Suíça</option>
+          <option value="Geórgia">🇬🇪 Geórgia</option>
+          <option value="Croácia">🇭🇷 Croácia</option>
+          <option value="Eslovênia">🇸🇮 Eslovênia</option>
+          <option value="Bulgária">🇧🇬 Bulgária</option>
+          <option value="Romênia">🇷🇴 Romênia</option>
+        </optgroup>
+        <optgroup label="Américas">
+          <option value="Brasil">🇧🇷 Brasil</option>
+          <option value="Argentina">🇦🇷 Argentina</option>
+          <option value="Chile">🇨🇱 Chile</option>
+          <option value="Uruguay">🇺🇾 Uruguay</option>
+          <option value="Estados Unidos">🇺🇸 Estados Unidos</option>
+          <option value="México">🇲🇽 México</option>
+        </optgroup>
+        <optgroup label="Oceania">
+          <option value="Austrália">🇦🇺 Austrália</option>
+          <option value="Nova Zelândia">🇳🇿 Nova Zelândia</option>
+        </optgroup>
+        <optgroup label="África e Oriente Médio">
+          <option value="África do Sul">🇿🇦 África do Sul</option>
+          <option value="Israel">🇮🇱 Israel</option>
+          <option value="Líbano">🇱🇧 Líbano</option>
+          <option value="Marrocos">🇲🇦 Marrocos</option>
+        </optgroup>
+      </select>
+      <div class="filter-types">
+        <button class="filter-type-btn active" data-type="" onclick="selectFilterType(this)">Todos</button>
+        <button class="filter-type-btn" data-type="tinto" onclick="selectFilterType(this)">🍷 Tinto</button>
+        <button class="filter-type-btn" data-type="branco" onclick="selectFilterType(this)">🥂 Branco</button>
+        <button class="filter-type-btn" data-type="rose" onclick="selectFilterType(this)">🌸 Rosé</button>
+        <button class="filter-type-btn" data-type="espumante" onclick="selectFilterType(this)">✨ Espumante</button>
+        <button class="filter-type-btn" data-type="doce" onclick="selectFilterType(this)">🍯 Doce</button>
+      </div>
+      <button class="filter-clear-btn" id="filter-clear" onclick="clearFilters()" style="display:none">✕ Limpar</button>
+    </div>
+
+    <div id="filter-results-bar" class="filter-results-bar" style="display:none"></div>
+
+    <div class="rack-container">
+      <div class="wine-rack" id="wine-rack"></div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:radial-gradient(circle,#e03050,#6a0010)"></div>Tinto</div>
+        <div class="legend-item"><div class="legend-dot" style="background:radial-gradient(circle,#ffe066,#a07800)"></div>Branco</div>
+        <div class="legend-item"><div class="legend-dot" style="background:radial-gradient(circle,#ff80a0,#a01040)"></div>Rosé</div>
+        <div class="legend-item"><div class="legend-dot" style="background:radial-gradient(circle,#80d880,#106810)"></div>Espumante</div>
+        <div class="legend-item"><div class="legend-dot" style="background:radial-gradient(circle,#c08050,#503010)"></div>Doce</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(92,26,46,0.5);border:1px dashed rgba(201,168,76,0.3)"></div>Vazio</div>
+      </div>
+    </div>
+
+    <!-- Controls bar below the rack -->
+    <div class="bottom-controls">
+      <div class="zoom-controls">
+        <button class="zoom-btn" onclick="changeZoom(-1)" title="Diminuir">−</button>
+        <div class="zoom-label" id="zoom-label">100%</div>
+        <button class="zoom-btn" onclick="changeZoom(1)" title="Aumentar">+</button>
+      </div>
+      <div class="bottom-controls-right">
+        <!-- Firebase sync bar -->
+        <div class="fb-bar">
+          <span id="fb-status" class="fb-status">☁ Offline</span>
+          <span id="fb-user-name" class="fb-user"></span>
+          <button id="fb-btn-login" class="btn-secondary btn-highlight" style="display:inline-flex">
+            ☁ Entrar / Criar conta
+          </button>
+          <button id="fb-btn-logout" class="btn-secondary" style="display:none">Sair</button>
+        </div>
+        <button class="btn-secondary btn-highlight" onclick="exportData()">⬇ Exportar</button>
+        <label class="btn-secondary btn-highlight" style="cursor:pointer">
+          ⬆ Importar
+          <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)">
+        </label>
+        <button class="btn-secondary" onclick="showChart()">📊 Safras</button>
+        <button class="btn-secondary" onclick="goToSetup()">⇄ Adegas</button>
+        <button class="btn-secondary" onclick="showHelp()">? Ajuda</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ WINE MODAL ══ -->
+  <div class="modal-overlay" id="wine-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="modal-title">Cadastrar Vinho</div>
+          <div class="modal-pos" id="modal-position"></div>
+        </div>
+        <button class="btn-close" onclick="closeModal('wine-modal')">✕</button>
+      </div>
+
+      <div class="field-group">
+        <label>Nome do vinho</label>
+        <input type="text" id="w-name" placeholder="Ex.: Château Margaux">
+      </div>
+      <div class="row-cols">
+        <div class="field-group">
+          <label>Safra</label>
+          <select id="w-vintage"><option value="">Selecione...</option></select>
+        </div>
+        <div class="field-group">
+          <label>País</label>
+          <select id="w-country">
+            <option value="">Selecione...</option>
+            <optgroup label="Europa">
+              <option value="França">🇫🇷 França</option>
+              <option value="Itália">🇮🇹 Itália</option>
+              <option value="Espanha">🇪🇸 Espanha</option>
+              <option value="Portugal">🇵🇹 Portugal</option>
+              <option value="Alemanha">🇩🇪 Alemanha</option>
+              <option value="Áustria">🇦🇹 Áustria</option>
+              <option value="Grécia">🇬🇷 Grécia</option>
+              <option value="Hungria">🇭🇺 Hungria</option>
+              <option value="Suíça">🇨🇭 Suíça</option>
+              <option value="Geórgia">🇬🇪 Geórgia</option>
+              <option value="Croácia">🇭🇷 Croácia</option>
+              <option value="Eslovênia">🇸🇮 Eslovênia</option>
+              <option value="Bulgária">🇧🇬 Bulgária</option>
+              <option value="Romênia">🇷🇴 Romênia</option>
+            </optgroup>
+            <optgroup label="Américas">
+              <option value="Brasil">🇧🇷 Brasil</option>
+              <option value="Argentina">🇦🇷 Argentina</option>
+              <option value="Chile">🇨🇱 Chile</option>
+              <option value="Uruguay">🇺🇾 Uruguay</option>
+              <option value="Estados Unidos">🇺🇸 Estados Unidos</option>
+              <option value="México">🇲🇽 México</option>
+            </optgroup>
+            <optgroup label="Oceania">
+              <option value="Austrália">🇦🇺 Austrália</option>
+              <option value="Nova Zelândia">🇳🇿 Nova Zelândia</option>
+            </optgroup>
+            <optgroup label="África e Oriente Médio">
+              <option value="África do Sul">🇿🇦 África do Sul</option>
+              <option value="Israel">🇮🇱 Israel</option>
+              <option value="Líbano">🇱🇧 Líbano</option>
+              <option value="Marrocos">🇲🇦 Marrocos</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Tipo</label>
+        <div class="type-selector">
+          <button class="type-btn" data-type="tinto"     onclick="selectType('tinto')">🍷 Tinto</button>
+          <button class="type-btn" data-type="branco"    onclick="selectType('branco')">🥂 Branco</button>
+          <button class="type-btn" data-type="rose"      onclick="selectType('rose')">🌸 Rosé</button>
+          <button class="type-btn" data-type="espumante" onclick="selectType('espumante')">✨ Espumante</button>
+          <button class="type-btn" data-type="doce"      onclick="selectType('doce')">🍯 Doce</button>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Local de compra</label>
+        <input type="text" id="w-store" placeholder="Ex.: Mistral, WineBar, viagem...">
+      </div>
+
+      <div class="field-group">
+        <label>Pontuações</label>
+        <div class="scores-list" id="scores-list"></div>
+        <div class="add-score-row">
+          <div class="add-score-select-wrap">
+            <select id="new-score-critic">
+              <option value="parker">Robert Parker (RP)</option>
+              <option value="spectator">Wine Spectator (WS)</option>
+              <option value="enthusiast">Wine Enthusiast (WE)</option>
+            </select>
+          </div>
+          <div class="add-score-input-wrap">
+            <input type="number" id="new-score-value" placeholder="95" min="50" max="100">
+          </div>
+          <button class="btn-add-score" onclick="addScore()">+ Adicionar</button>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Anotações</label>
+        <textarea id="w-notes" placeholder="Harmonizações, características, ocasiões especiais..." rows="3"></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-save" onclick="saveWine()">Salvar</button>
+        <button class="btn-consume" id="btn-consume" onclick="consumeWine()" style="display:none">🍷 Consumido</button>
+        <button class="btn-copy" id="btn-copy" onclick="startCopy()" style="display:none">⎘ Duplicar</button>
+        <button class="btn-move" id="btn-move" onclick="startMove()" style="display:none">↕ Mover</button>
+        <button class="btn-transfer" id="btn-transfer" onclick="showTransfer()" style="display:none">⇄ Transferir</button>
+        <button class="btn-remove" id="btn-remove" onclick="removeWine()" style="display:none">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ COPY MODE BANNER ══ -->
+  <div id="copy-banner" style="display:none">
+    <div class="move-banner-inner">
+      <span id="copy-banner-text">Clique em um espaço vazio para copiar o vinho</span>
+      <button class="move-cancel-btn" onclick="cancelCopy()">✕ Cancelar</button>
+    </div>
+  </div>
+
+  <!-- ══ CHART MODAL ══ -->
+  <div class="modal-overlay" id="chart-modal">
+    <div class="modal" style="max-width:680px">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">Vinhos por Safra</div>
+          <div class="modal-pos" id="chart-modal-pos"></div>
+        </div>
+        <button class="btn-close" onclick="closeModal('chart-modal')">✕</button>
+      </div>
+      <div id="chart-container"></div>
+    </div>
+  </div>
+
+  <!-- ══ MOVE MODE BANNER ══ -->
+  <div id="move-banner" style="display:none">
+    <div class="move-banner-inner">
+      <span id="move-banner-text">Clique em um espaço vazio para mover o vinho</span>
+      <button class="move-cancel-btn" onclick="cancelMove()">✕ Cancelar</button>
+    </div>
+  </div>
+
+  <!-- ══ TRANSFER MODAL ══ -->
+  <div class="modal-overlay" id="transfer-modal">
+    <div class="modal transfer-modal">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">Transferir Vinho</div>
+          <div class="modal-pos">Escolha a adega de destino</div>
+        </div>
+        <button class="btn-close" onclick="closeModal('transfer-modal')">✕</button>
+      </div>
+      <div class="transfer-wine-name" id="transfer-wine-name"></div>
+      <div class="transfer-cellar-list" id="transfer-cellar-list"></div>
+      <p style="font-size:0.65rem;color:var(--text-muted);letter-spacing:0.08em;line-height:1.6">
+        O vinho será movido para o primeiro espaço vazio disponível na adega de destino.
+      </p>
+    </div>
+  </div>
+
+  <!-- ══ HELP MODAL ══ -->
+  <div class="modal-overlay" id="help-modal">
+    <div class="modal help-modal">
+      <div class="modal-header">
+        <div class="modal-title">Como usar o aplicativo</div>
+        <button class="btn-close" onclick="closeModal('help-modal')">✕</button>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Usar no computador</div>
+        <div class="help-step"><div class="help-step-num">1</div><p>Baixe o arquivo <strong>adega_v2.html</strong> para o seu computador.</p></div>
+        <div class="help-step"><div class="help-step-num">2</div><p>Dê um <strong>duplo clique</strong> no arquivo — ele abre diretamente no navegador (Chrome, Edge, Firefox ou Safari). Não é necessário instalar nada.</p></div>
+        <div class="help-step"><div class="help-step-num">3</div><p>Os dados são <strong>salvos automaticamente</strong> no navegador. Na próxima vez que abrir o arquivo no mesmo computador e navegador, tudo estará exatamente como você deixou.</p></div>
+        <div class="help-step"><div class="help-step-num">4</div><p>Use <strong>⬇ Exportar</strong> para criar um backup externo e <strong>⬆ Importar</strong> para restaurá-lo em outro dispositivo.</p></div>
+      </div>
+
+      <div class="help-divider"></div>
+
+      <div class="help-section">
+        <div class="help-section-title">Usar em máquinas diferentes ou no celular</div>
+        <div class="help-step"><div class="help-step-num">1</div><p>Copie o arquivo <strong>adega.html</strong> para um <strong>pen drive</strong> ou envie por <strong>e-mail / WhatsApp</strong> para qualquer dispositivo.</p></div>
+        <div class="help-step"><div class="help-step-num">2</div><p>No celular (Android ou iPhone), abra o arquivo pelo <strong>Google Chrome</strong> ou <strong>Safari</strong>. No Android você pode tocar no arquivo diretamente pelo gerenciador de arquivos.</p></div>
+        <div class="help-step"><div class="help-step-num">3</div><p>Para manter os dados sincronizados entre dispositivos, salve o arquivo <strong>.json de backup</strong> em uma pasta do <strong>Google Drive</strong>, <strong>iCloud</strong> ou <strong>Dropbox</strong> — e importe-o de qualquer aparelho.</p></div>
+      </div>
+
+      <div class="help-divider"></div>
+
+      <div class="help-section">
+        <div class="help-section-title">Gerenciar múltiplas adegas</div>
+        <p>O app suporta várias adegas simultâneas. Use o botão <strong>⇄ Adegas</strong> no cabeçalho para criar novas adegas ou alternar entre elas. Para transferir um vinho entre adegas, abra o vinho e clique em <strong>⇄ Transferir</strong>.</p>
+      </div>
+
+      <div class="help-divider"></div>
+
+      <div class="help-section">
+        <div class="help-section-title">Registrar consumo</div>
+        <p>Ao abrir um vinho cadastrado, clique em <strong>🍷 Consumido</strong> para retirá-lo da adega com uma animação e liberar o espaço. O botão <strong>Excluir</strong> remove o registro permanentemente sem animação.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ LOGIN MODAL ══ -->
+  <div class="modal-overlay" id="login-modal">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">Sincronização</div>
+          <div class="modal-pos">Entre para salvar na nuvem</div>
+        </div>
+        <button class="btn-close" onclick="document.getElementById('login-modal').classList.remove('active')">✕</button>
+      </div>
+
+      <div class="field-group">
+        <label>E-mail</label>
+        <input type="email" id="login-email" placeholder="seu@email.com" autocomplete="email">
+      </div>
+      <div class="field-group">
+        <label>Senha</label>
+        <input type="password" id="login-password" placeholder="Mínimo 6 caracteres" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter') window.firebaseLogin('login')">
+      </div>
+
+      <div id="login-error" style="font-size:0.72rem;color:rgba(255,120,120,0.9);margin-bottom:0.8rem;min-height:1.2em;letter-spacing:0.05em"></div>
+
+      <div style="display:flex;gap:0.6rem">
+        <button id="login-submit-btn" class="btn-save" style="flex:1" onclick="window.firebaseLogin('login')">Entrar</button>
+        <button class="btn-secondary" style="flex:1;height:auto;padding:0.85rem" onclick="window.firebaseLogin('register')">Criar conta</button>
+      </div>
+      <p style="font-size:0.62rem;color:var(--text-muted);margin-top:1rem;letter-spacing:0.06em;line-height:1.6;text-align:center">
+        Primeira vez? Clique em <strong style="color:var(--cream)">Criar conta</strong>.<br>
+        Já tem conta? Clique em <strong style="color:var(--cream)">Entrar</strong>.
+      </p>
+    </div>
+  </div>
+
+<!-- Global floating wine tooltip -->
+<div id="wine-tooltip"></div>
+
+</div>
+
+<script>
+  // ── State ──
+  let allCellars = [];
+  let activeCellarIdx = -1;
+  let currentSlot = null;
+  let selectedType = '';
+  let currentScores = [];
+
+  // Filter state
+  let filterName    = '';
+  let filterVintage = '';
+  let filterCountry = '';
+  let filterType    = '';
+
+  const ZOOM_LEVELS = [
+    [24,3,'40%'],[30,4,'50%'],[36,5,'60%'],[44,6,'73%'],
+    [60,10,'100%'],[72,12,'120%'],[84,14,'140%'],[100,16,'167%']
+  ];
+  let zoomIdx = 4;
+
+  // ── Helpers ──
+  function cd() { return allCellars[activeCellarIdx]; }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── Vintage dropdowns (modal + filter) ──
+  (function() {
+    const modalSel  = document.getElementById('w-vintage');
+    const filterSel = document.getElementById('f-vintage');
+    const cur = new Date().getFullYear();
+
+    // "Sem Safra" option
+    [modalSel, filterSel].forEach(sel => {
+      const o = document.createElement('option');
+      o.value = 'Sem Safra'; o.textContent = 'Sem Safra';
+      sel.appendChild(o);
+    });
+
+    for (let y = cur; y >= 1900; y--) {
+      const o1 = document.createElement('option');
+      o1.value = y; o1.textContent = y; modalSel.appendChild(o1);
+      const o2 = document.createElement('option');
+      o2.value = y; o2.textContent = y; filterSel.appendChild(o2);
+    }
+  })();
+
+  // ── Normalize wine data (fix Firebase type mismatches) ──
+  function normalizeWine(wine) {
+    if (!wine) return wine;
+    return {
+      name:    wine.name    || '',
+      vintage: wine.vintage || '',
+      country: wine.country || '',
+      type:    wine.type    || 'tinto',
+      store:   wine.store   || '',
+      notes:   wine.notes   || '',
+      scores:  Array.isArray(wine.scores) ? wine.scores : []
+    };
+  }
+
+  function normalizeCellars(cellars) {
+    return cellars.map(cellar => ({
+      ...cellar,
+      wines: Object.fromEntries(
+        Object.entries(cellar.wines || {}).map(([k, w]) => [k, normalizeWine(w)])
+      )
+    }));
+  }
+
+  // ── Setup screen ──
+  function refreshSetupList() {
+    const section = document.getElementById('saved-cellars-section');
+    const list    = document.getElementById('saved-cellars-list');
+    list.innerHTML = '';
+    if (!allCellars.length) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+    allCellars.forEach((c, i) => {
+      const count = Object.keys(c.wines).length;
+      const item  = document.createElement('div');
+      item.className = 'cellar-list-item';
+      item.innerHTML =
+        `<div>
+          <div class="cellar-list-item-name">${esc(c.name)}</div>
+          <div class="cellar-list-item-meta">${c.rows}×${c.cols} · ${count} ${count===1?'garrafa':'garrafas'}</div>
+        </div>
+        <button class="cellar-list-item-del" onclick="deleteCellar(event,${i})" title="Excluir adega">✕</button>`;
+      item.addEventListener('click', () => openCellar(i));
+      list.appendChild(item);
+    });
+  }
+
+  function openCellar(idx) {
+    activeCellarIdx = idx;
+    clearFilters();
+    document.getElementById('setup-screen').style.display = 'none';
+    document.getElementById('cellar-screen').style.display = 'block';
+    renderCellar();
+    applyZoom();
+  }
+
+  function goToSetup() {
+    document.getElementById('cellar-screen').style.display = 'none';
+    document.getElementById('setup-screen').style.display = 'flex';
+    refreshSetupList();
+  }
+
+  function deleteCellar(e, idx) {
+    e.stopPropagation();
+    if (!confirm(`Excluir a adega "${allCellars[idx].name}"? Esta ação não pode ser desfeita.`)) return;
+    allCellars.splice(idx, 1);
+    if (activeCellarIdx === idx) activeCellarIdx = -1;
+    else if (activeCellarIdx > idx) activeCellarIdx--;
+    saveToStorage();
+    refreshSetupList();
+  }
+
+  function createCellar() {
+    const name = document.getElementById('cellar-name-input').value.trim() || 'Minha Adega';
+    const rows = Math.min(50, Math.max(1, parseInt(document.getElementById('rows-input').value) || 25));
+    const cols = Math.min(50, Math.max(1, parseInt(document.getElementById('cols-input').value) || 30));
+    const newCellar = { name, rows, cols, wines: {} };
+    allCellars.push(newCellar);
+    document.getElementById('cellar-name-input').value = '';
+    saveToStorage();
+    openCellar(allCellars.length - 1);
+  }
+
+  // ── Zoom ──
+  function applyZoom() {
+    const [size, gap, label] = ZOOM_LEVELS[zoomIdx];
+    const rack = document.getElementById('wine-rack');
+    rack.style.setProperty('--slot-size', size + 'px');
+    rack.style.setProperty('--slot-gap',  gap  + 'px');
+    document.getElementById('zoom-label').textContent = label;
+  }
+
+  function changeZoom(dir) {
+    zoomIdx = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, zoomIdx + dir));
+    applyZoom();
+    renderCellar();
+  }
+
+  // ── Render rack ──
+  function renderCellar() {
+    const data = cd();
+    document.getElementById('cellar-display-name').textContent = data.name;
+    const rack = document.getElementById('wine-rack');
+    rack.innerHTML = '';
+    applyZoom();
+
+    for (let r = 0; r < data.rows; r++) {
+      const row = document.createElement('div');
+      row.className = 'rack-row';
+      for (let c = 0; c < data.cols; c++) {
+        const key  = `${r}-${c}`;
+        const wine = data.wines[key];
+        const slot = document.createElement('div');
+        slot.className = 'bottle-slot ' + (wine ? `filled ${wine.type}` : 'empty');
+        slot.setAttribute('data-key', key);
+        slot.onclick = () => openModal(key);
+
+        if (!wine) {
+          const plus = document.createElement('div');
+          plus.className = 'plus-icon'; plus.textContent = '+';
+          slot.appendChild(plus);
+        } else {
+          if (wine.scores && wine.scores.length > 0) {
+            const best = wine.scores.reduce((a, b) => b.value > a.value ? b : a);
+            const abbr = { parker:'RP', spectator:'WS', enthusiast:'WE' };
+            const badge = document.createElement('div');
+            badge.className = 'score-badge';
+            badge.textContent = abbr[best.critic] + ' ' + best.value;
+            slot.appendChild(badge);
+          }
+          // Store wine data on slot for tooltip
+          slot.dataset.wine = JSON.stringify({
+            name: wine.name,
+            type: wine.type,
+            vintage: wine.vintage || '',
+            country: wine.country || '',
+            store: wine.store || '',
+            notes: wine.notes || '',
+            scores: wine.scores || []
+          });
+          slot.addEventListener('mouseenter', showTooltip);
+          slot.addEventListener('mouseleave', hideTooltip);
+          slot.addEventListener('mousemove', moveTooltip);
+        }
+        row.appendChild(slot);
+      }
+      rack.appendChild(row);
+    }
+    updateStats();
+    // Re-apply active filters after re-render
+    if (filterName || filterVintage || filterCountry || filterType) applyFilters();
+  }
+
+  function updateStats() {
+    const data  = cd();
+    const count = Object.keys(data.wines).length;
+    const total = data.rows * data.cols;
+    document.getElementById('cellar-stats').textContent =
+      `${count} ${count===1?'garrafa':'garrafas'} · ${total-count} espaços livres`;
+  }
+
+  // ── Filters ──
+  function selectFilterType(btn) {
+    document.querySelectorAll('.filter-type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filterType = btn.dataset.type;
+    if (activeCellarIdx >= 0) applyFilters();
+  }
+
+  function applyFilters() {
+    if (activeCellarIdx < 0 || !cd()) return;
+    filterName    = document.getElementById('f-name').value.trim().toLowerCase();
+    filterVintage = document.getElementById('f-vintage').value;
+    filterCountry = document.getElementById('f-country').value;
+    // filterType is set by selectFilterType
+
+    const hasFilter = filterName || filterVintage || filterCountry || filterType;
+    document.getElementById('filter-clear').style.display = hasFilter ? 'inline-block' : 'none';
+
+    const slots = document.querySelectorAll('.bottle-slot');
+    let matchCount = 0;
+
+    slots.forEach(slot => {
+      const key  = slot.getAttribute('data-key');
+      const wine = cd().wines[key];
+
+      if (!wine) {
+        // empty slots: dim if any filter active
+        slot.classList.toggle('dimmed', !!hasFilter);
+        return;
+      }
+
+      const matchName    = !filterName    || wine.name.toLowerCase().includes(filterName);
+      const matchVintage = !filterVintage || String(wine.vintage) === filterVintage;
+      const matchCountry = !filterCountry || wine.country === filterCountry;
+      const matchType    = !filterType    || wine.type === filterType;
+
+      const matches = matchName && matchVintage && matchCountry && matchType;
+      slot.classList.toggle('dimmed', !matches);
+      if (matches) matchCount++;
+    });
+
+    const resultsBar = document.getElementById('filter-results-bar');
+    if (hasFilter) {
+      resultsBar.style.display = 'block';
+      resultsBar.textContent   = `${matchCount} ${matchCount===1?'vinho encontrado':'vinhos encontrados'}`;
+    } else {
+      resultsBar.style.display = 'none';
+    }
+  }
+
+  function clearFilters() {
+    filterName = ''; filterVintage = ''; filterCountry = ''; filterType = '';
+    document.getElementById('f-name').value    = '';
+    document.getElementById('f-vintage').value = '';
+    document.getElementById('f-country').value = '';
+    document.querySelectorAll('.filter-type-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.filter-type-btn[data-type=""]').classList.add('active');
+    document.getElementById('filter-clear').style.display  = 'none';
+    document.getElementById('filter-results-bar').style.display = 'none';
+    document.querySelectorAll('.bottle-slot').forEach(s => s.classList.remove('dimmed'));
+  }
+
+  // ── Wine modal ──
+  function openModal(key) {
+    try {
+      currentSlot = key;
+      const wine = cd().wines[key];
+      const [r, c] = key.split('-').map(Number);
+
+      document.getElementById('modal-position').textContent = `Linha ${r+1} · Coluna ${c+1}`;
+      document.getElementById('modal-title').textContent = wine ? 'Editar Vinho' : 'Cadastrar Vinho';
+      document.getElementById('w-name').value    = wine?.name    || '';
+      document.getElementById('w-vintage').value = wine?.vintage ? String(wine.vintage) : '';
+      document.getElementById('w-country').value = wine?.country || '';
+      document.getElementById('w-store').value   = wine?.store   || '';
+      document.getElementById('w-notes').value   = wine?.notes   || '';
+
+      selectedType = wine?.type || '';
+      document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+      if (selectedType) {
+        const btn = document.querySelector(`.type-btn[data-type="${selectedType}"]`);
+        if (btn) btn.classList.add('active');
+      }
+
+      currentScores = [];
+      if (wine?.scores) {
+        // Handle both array and object formats from Firebase
+        if (Array.isArray(wine.scores)) {
+          currentScores = JSON.parse(JSON.stringify(wine.scores));
+        } else if (typeof wine.scores === 'object') {
+          currentScores = Object.values(wine.scores);
+        }
+      }
+      renderScoresList();
+      document.getElementById('new-score-value').value = '';
+
+      const hasWine = !!wine;
+      const hasOtherCellars = allCellars.length > 1;
+      document.getElementById('btn-consume').style.display  = hasWine ? 'block' : 'none';
+      document.getElementById('btn-copy').style.display     = hasWine ? 'block' : 'none';
+      document.getElementById('btn-move').style.display     = hasWine ? 'block' : 'none';
+      document.getElementById('btn-transfer').style.display = (hasWine && hasOtherCellars) ? 'block' : 'none';
+      document.getElementById('btn-remove').style.display   = hasWine ? 'block' : 'none';
+      document.getElementById('wine-modal').classList.add('active');
+    } catch(err) {
+      console.error('Erro ao abrir modal:', err);
+      alert('Erro ao abrir vinho: ' + err.message);
+    }
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+    if (id === 'wine-modal') currentSlot = null;
+  }
+
+  function selectType(type) {
+    selectedType = type;
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.type-btn[data-type="${type}"]`).classList.add('active');
+  }
+
+  // ── Scores ──
+  const CRITIC_FULL = { parker:'Robert Parker', spectator:'Wine Spectator', enthusiast:'Wine Enthusiast' };
+
+  function renderScoresList() {
+    const list = document.getElementById('scores-list');
+    list.innerHTML = '';
+    if (!currentScores.length) {
+      const msg = document.createElement('div');
+      msg.className = 'no-scores-msg'; msg.textContent = 'Nenhuma pontuação adicionada';
+      list.appendChild(msg); return;
+    }
+    currentScores.forEach((s, i) => {
+      const row = document.createElement('div');
+      row.className = 'score-row';
+      row.innerHTML =
+        `<span class="score-row-critic">${CRITIC_FULL[s.critic]}</span>` +
+        `<span class="score-row-value">${s.value}</span>` +
+        `<button class="btn-score-del" onclick="removeScore(${i})">✕</button>`;
+      list.appendChild(row);
+    });
+  }
+
+  function addScore() {
+    const critic = document.getElementById('new-score-critic').value;
+    const val    = parseInt(document.getElementById('new-score-value').value);
+    if (isNaN(val) || val < 50 || val > 100) { document.getElementById('new-score-value').focus(); return; }
+    currentScores.push({ critic, value: val });
+    document.getElementById('new-score-value').value = '';
+    renderScoresList();
+  }
+
+  function removeScore(idx) { currentScores.splice(idx, 1); renderScoresList(); }
+
+  // ── Save ──
+  function saveWine() {
+    const name = document.getElementById('w-name').value.trim();
+    if (!name) { document.getElementById('w-name').focus(); return; }
+    cd().wines[currentSlot] = {
+      name,
+      vintage: document.getElementById('w-vintage').value,
+      country: document.getElementById('w-country').value,
+      type:    selectedType || 'tinto',
+      store:   document.getElementById('w-store').value,
+      notes:   document.getElementById('w-notes').value.trim(),
+      scores:  [...currentScores]
+    };
+    closeModal('wine-modal');
+    saveToStorage();
+    renderCellar();
+  }
+
+  // ── Consume (animated removal) ──
+  function consumeWine() {
+    if (!currentSlot || !cd().wines[currentSlot]) return;
+    const key = currentSlot;
+    closeModal('wine-modal');
+    // Find the slot element and animate
+    const slot = document.querySelector(`.bottle-slot[data-key="${key}"]`);
+    if (slot) {
+      slot.classList.add('consuming');
+      slot.style.pointerEvents = 'none';
+      setTimeout(() => {
+        delete cd().wines[key];
+        saveToStorage();
+        renderCellar();
+      }, 680);
+    } else {
+      delete cd().wines[key];
+      saveToStorage();
+      renderCellar();
+    }
+  }
+
+  // ── Remove (no animation) ──
+  function removeWine() {
+    if (!currentSlot || !cd().wines[currentSlot]) return;
+    if (!confirm('Excluir este vinho do registro?')) return;
+    delete cd().wines[currentSlot];
+    closeModal('wine-modal');
+    saveToStorage();
+    renderCellar();
+  }
+
+  // ── Move within same cellar ──
+  let moveSourceKey = null;
+
+  function startMove() {
+    const wine = cd().wines[currentSlot];
+    if (!wine) return;
+    moveSourceKey = currentSlot;
+    closeModal('wine-modal');
+
+    // Show banner
+    document.getElementById('move-banner-text').textContent =
+      `Mover "${wine.name}" — clique no espaço de destino`;
+    document.getElementById('move-banner').style.display = 'block';
+
+    // Style all slots
+    document.querySelectorAll('.bottle-slot').forEach(slot => {
+      const key = slot.getAttribute('data-key');
+      if (key === moveSourceKey) {
+        slot.classList.add('move-source');
+        slot.onclick = null;
+      } else if (cd().wines[key]) {
+        // Occupied by another wine — blocked
+        slot.classList.add('move-blocked');
+        slot.onclick = null;
+      } else {
+        // Empty — valid target
+        slot.classList.add('move-target');
+        slot.onclick = () => applyMove(key);
+      }
+    });
+  }
+
+  function applyMove(destKey) {
+    if (!moveSourceKey || !cd().wines[moveSourceKey]) { cancelMove(); return; }
+    cd().wines[destKey] = JSON.parse(JSON.stringify(cd().wines[moveSourceKey]));
+    delete cd().wines[moveSourceKey];
+    saveToStorage();
+    cancelMove(false); // don't need to re-clean slots, renderCellar will do it
+    renderCellar();
+  }
+
+  function cancelMove(rerender = true) {
+    moveSourceKey = null;
+    document.getElementById('move-banner').style.display = 'none';
+    if (rerender) {
+      // Restore slot classes by re-rendering
+      renderCellar();
+    }
+  }
+
+
+  function showTransfer() {
+    const wine = cd().wines[currentSlot];
+    if (!wine) return;
+
+    const slotToTransfer = currentSlot; // save before closing modal
+
+    document.getElementById('transfer-wine-name').textContent = `"${wine.name}"`;
+    const list = document.getElementById('transfer-cellar-list');
+    list.innerHTML = '';
+
+    const otherCellars = allCellars
+      .map((c, i) => ({ c, i }))
+      .filter(({ i }) => i !== activeCellarIdx);
+
+    if (!otherCellars.length) {
+      list.innerHTML = '<p style="font-size:0.72rem;color:var(--text-muted)">Nenhuma outra adega disponível.</p>';
+    } else {
+      otherCellars.forEach(({ c, i }) => {
+        const count = Object.keys(c.wines).length;
+        const free  = c.rows * c.cols - count;
+        const btn   = document.createElement('button');
+        btn.className = 'transfer-cellar-btn';
+        btn.innerHTML =
+          `<span>${esc(c.name)}</span>` +
+          `<span class="transfer-cellar-meta">${free} espaço${free!==1?'s':''} livre${free!==1?'s':''}</span>`;
+        btn.disabled = free === 0;
+        if (free === 0) btn.style.opacity = '0.4';
+        btn.onclick = () => doTransfer(i, slotToTransfer);
+        list.appendChild(btn);
+      });
+    }
+
+    closeModal('wine-modal');
+    document.getElementById('transfer-modal').classList.add('active');
+  }
+
+  function doTransfer(targetIdx, sourceKey) {
+    const key  = sourceKey || currentSlot;
+    const wine = cd().wines[key];
+    if (!wine) { alert('Vinho não encontrado. Tente novamente.'); return; }
+
+    const target = allCellars[targetIdx];
+
+    // Find first empty slot in target
+    let destKey = null;
+    outer:
+    for (let r = 0; r < target.rows; r++) {
+      for (let c = 0; c < target.cols; c++) {
+        const k = `${r}-${c}`;
+        if (!target.wines[k]) { destKey = k; break outer; }
+      }
+    }
+    if (!destKey) { alert('Adega de destino não tem espaços livres.'); return; }
+
+    // Deep-clone the wine
+    target.wines[destKey] = JSON.parse(JSON.stringify(wine));
+    delete cd().wines[key];
+    closeModal('transfer-modal');
+    saveToStorage();
+    currentSlot = null;
+    renderCellar();
+  }
+
+  // ── Export / Import ──
+  function exportData() {
+    const payload = JSON.stringify({ version: 2, cellars: allCellars }, null, 2);
+    const blob    = new Blob([payload], { type: 'application/json' });
+    const url     = URL.createObjectURL(blob);
+    const a       = document.createElement('a');
+    const safe    = (cd()?.name || 'adega').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    a.href = url; a.download = `${safe}_${new Date().toISOString().slice(0,10)}.json`;
+    a.click(); URL.revokeObjectURL(url);
+  }
+
+  function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        // Support v2 (multi-cellar) and v1 (single cellar)
+        if (data.version === 2 && Array.isArray(data.cellars)) {
+          allCellars = normalizeCellars(data.cellars);
+          activeCellarIdx = 0;
+        } else if (data.rows && data.cols && data.wines) {
+          allCellars.push(normalizeCellars([data])[0]);
+          activeCellarIdx = allCellars.length - 1;
+        } else throw new Error('invalid');
+        document.getElementById('setup-screen').style.display = 'none';
+        document.getElementById('cellar-screen').style.display = 'block';
+        saveToStorage();
+        renderCellar(); applyZoom();
+      } catch(err) {
+        alert('Não foi possível carregar o arquivo. Verifique se é um backup válido.');
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  }
+
+  // ── Persistência automática (localStorage) ──
+  const STORAGE_KEY = 'minha_adega_v2';
+
+  function saveToStorage() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 2, cellars: allCellars }));
+      // Also save to Firebase if logged in
+      window._adegaAllCellars = allCellars;
+      if (typeof window.saveToFirebase === 'function') window.saveToFirebase(allCellars);
+    } catch(e) {
+      console.warn('Não foi possível salvar automaticamente:', e);
+    }
+  }
+
+  // Called by Firebase module when remote data changes
+  window.firebaseReload = function(remoteCellars) {
+    allCellars = normalizeCellars(remoteCellars);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 2, cellars: allCellars }));
+    if (activeCellarIdx >= allCellars.length) activeCellarIdx = 0;
+    if (allCellars.length > 0) {
+      if (activeCellarIdx < 0) activeCellarIdx = 0;
+      document.getElementById('setup-screen').style.display = 'none';
+      document.getElementById('cellar-screen').style.display = 'block';
+      renderCellar();
+      applyZoom();
+    } else {
+      refreshSetupList();
+    }
+  };
+
+  function loadFromStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+      const data = JSON.parse(raw);
+      if (data.version === 2 && Array.isArray(data.cellars) && data.cellars.length) {
+        allCellars = normalizeCellars(data.cellars);
+        return true;
+      }
+    } catch(e) { /* ignore corrupt data */ }
+    return false;
+  }
+
+  // ── Global floating tooltip ──
+  const TYPE_COLORS = { tinto:'#c03050', branco:'#d4a820', rose:'#d04060', espumante:'#3a9040', doce:'#805030' };
+  const TYPE_LABELS = { tinto:'Tinto', branco:'Branco', rose:'Rosé', espumante:'Espumante', doce:'Doce' };
+  const ABBR = { parker:'RP', spectator:'WS', enthusiast:'WE' };
+
+  function buildTooltipContent(wine) {
+    const tip = document.getElementById('wine-tooltip');
+    tip.innerHTML = '';
+
+    // Colour bar
+    const bar = document.createElement('div');
+    bar.className = 'tooltip-type-bar';
+    bar.style.background = TYPE_COLORS[wine.type] || 'rgba(201,168,76,0.4)';
+    tip.appendChild(bar);
+
+    // Name
+    const nameEl = document.createElement('span');
+    nameEl.className = 'tooltip-name';
+    nameEl.textContent = wine.name;
+    tip.appendChild(nameEl);
+
+    // Type
+    if (wine.type) {
+      const row = document.createElement('div');
+      row.className = 'tooltip-row';
+      row.innerHTML = `<span class="tooltip-row-label">Tipo</span><span class="tooltip-row-value">${TYPE_LABELS[wine.type] || wine.type}</span>`;
+      tip.appendChild(row);
+    }
+
+    // Vintage
+    if (wine.vintage) {
+      const row = document.createElement('div');
+      row.className = 'tooltip-row';
+      row.innerHTML = `<span class="tooltip-row-label">Safra</span><span class="tooltip-row-value">${wine.vintage}</span>`;
+      tip.appendChild(row);
+    }
+
+    // Country
+    if (wine.country) {
+      const row = document.createElement('div');
+      row.className = 'tooltip-row';
+      row.innerHTML = `<span class="tooltip-row-label">País</span><span class="tooltip-row-value">${esc(wine.country)}</span>`;
+      tip.appendChild(row);
+    }
+
+    // Store
+    if (wine.store) {
+      const row = document.createElement('div');
+      row.className = 'tooltip-row';
+      row.innerHTML = `<span class="tooltip-row-label">Compra</span><span class="tooltip-row-value">${esc(wine.store)}</span>`;
+      tip.appendChild(row);
+    }
+
+    // Notes
+    if (wine.notes) {
+      const divider = document.createElement('div');
+      divider.className = 'tooltip-divider';
+      tip.appendChild(divider);
+      const row = document.createElement('div');
+      row.className = 'tooltip-row';
+      row.style.alignItems = 'flex-start';
+      row.innerHTML = `<span class="tooltip-row-label">Notas</span><span class="tooltip-row-value" style="white-space:normal;max-width:160px;line-height:1.5">${esc(wine.notes)}</span>`;
+      tip.appendChild(row);
+    }
+
+    // Scores
+    if (wine.scores && wine.scores.length > 0) {
+      const divider = document.createElement('div');
+      divider.className = 'tooltip-divider';
+      tip.appendChild(divider);
+      wine.scores.forEach(s => {
+        const row = document.createElement('div');
+        row.className = 'tooltip-row';
+        row.innerHTML = `<span class="tooltip-row-label">${ABBR[s.critic] || s.critic}</span><span class="tooltip-row-value">${s.value} pts</span>`;
+        tip.appendChild(row);
+      });
+    }
+  }
+
+  function showTooltip(e) {
+    try {
+      const wine = JSON.parse(this.dataset.wine);
+      buildTooltipContent(wine);
+      const tip = document.getElementById('wine-tooltip');
+      tip.classList.add('visible');
+      positionTooltip(e, tip);
+    } catch(err) {}
+  }
+
+  function hideTooltip() {
+    document.getElementById('wine-tooltip').classList.remove('visible');
+  }
+
+  function moveTooltip(e) {
+    const tip = document.getElementById('wine-tooltip');
+    if (tip.classList.contains('visible')) positionTooltip(e, tip);
+  }
+
+  function positionTooltip(e, tip) {
+    const margin = 12;
+    const tw = tip.offsetWidth  || 200;
+    const th = tip.offsetHeight || 120;
+    let x = e.clientX + margin;
+    let y = e.clientY - th - margin;
+    if (x + tw > window.innerWidth  - 8) x = e.clientX - tw - margin;
+    if (y < 8) y = e.clientY + margin;
+    tip.style.left = x + 'px';
+    tip.style.top  = y + 'px';
+  }
+
+  // ── Copy wine to another slot ──
+  let copySourceKey = null;
+
+  function startCopy() {
+    const wine = cd().wines[currentSlot];
+    if (!wine) return;
+    copySourceKey = currentSlot;
+    closeModal('wine-modal');
+
+    document.getElementById('copy-banner-text').textContent =
+      `Copiar "${wine.name}" — clique no espaço de destino`;
+    document.getElementById('copy-banner').style.display = 'block';
+
+    document.querySelectorAll('.bottle-slot').forEach(slot => {
+      const key = slot.getAttribute('data-key');
+      if (key === copySourceKey) {
+        slot.classList.add('move-source');
+        slot.onclick = null;
+      } else if (cd().wines[key]) {
+        slot.classList.add('move-blocked');
+        slot.onclick = null;
+      } else {
+        slot.classList.add('move-target');
+        slot.onclick = () => applyCopy(key);
+      }
+    });
+  }
+
+  function applyCopy(destKey) {
+    if (!copySourceKey || !cd().wines[copySourceKey]) { cancelCopy(); return; }
+    // Deep clone — independent copy
+    cd().wines[destKey] = JSON.parse(JSON.stringify(cd().wines[copySourceKey]));
+    saveToStorage();
+    cancelCopy(false);
+    renderCellar();
+  }
+
+  function cancelCopy(rerender = true) {
+    copySourceKey = null;
+    document.getElementById('copy-banner').style.display = 'none';
+    if (rerender) renderCellar();
+  }
+
+  // ── Vintage chart ──
+  function showChart() {
+    const data  = cd();
+    const wines = Object.values(data.wines);
+
+    // Count by vintage
+    const counts = {};
+    wines.forEach(w => {
+      const v = w.vintage || 'Sem Safra';
+      counts[v] = (counts[v] || 0) + 1;
+    });
+
+    // Sort: numeric vintages ascending (oldest first = most urgent), then "Sem Safra"
+    const sorted = Object.entries(counts).sort((a, b) => {
+      const aNum = parseInt(a[0]), bNum = parseInt(b[0]);
+      if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+      if (!isNaN(aNum)) return -1;
+      if (!isNaN(bNum)) return 1;
+      return 0;
+    });
+
+    const total  = wines.length;
+    const maxVal = Math.max(...sorted.map(e => e[1]), 1);
+    const currentYear = new Date().getFullYear();
+
+    // Color by age urgency
+    function barColor(vintage) {
+      const v = parseInt(vintage);
+      if (isNaN(v)) return '#806040';
+      const age = currentYear - v;
+      if (age >= 20) return '#e03050'; // very urgent — red
+      if (age >= 12) return '#e88030'; // urgent — orange
+      if (age >= 7)  return '#c9a84c'; // moderate — gold
+      if (age >= 3)  return '#3a9040'; // young — green
+      return '#4090c0';                // very young — blue
+    }
+
+    // Build SVG chart
+    const barW   = 28;
+    const gap    = 10;
+    const chartH = 180;
+    const labelH = 36;
+    const padL   = 36;
+    const padR   = 16;
+    const svgW   = padL + sorted.length * (barW + gap) + padR;
+    const svgH   = chartH + labelH + 24;
+
+    let bars = '';
+    let xLabels = '';
+    let yLabels = '';
+
+    // Y axis labels
+    const steps = 4;
+    for (let i = 0; i <= steps; i++) {
+      const val = Math.round((maxVal / steps) * i);
+      const y   = chartH - (val / maxVal) * chartH;
+      yLabels += `
+        <line x1="${padL}" y1="${y}" x2="${svgW - padR}" y2="${y}"
+              stroke="rgba(201,168,76,0.08)" stroke-width="1"/>
+        <text x="${padL - 6}" y="${y + 4}" text-anchor="end"
+              font-size="9" fill="rgba(176,144,128,0.6)">${val}</text>`;
+    }
+
+    sorted.forEach(([vintage, count], i) => {
+      const x   = padL + i * (barW + gap);
+      const bh  = Math.max(4, (count / maxVal) * chartH);
+      const y   = chartH - bh;
+      const col = barColor(vintage);
+      const age = parseInt(vintage) ? currentYear - parseInt(vintage) : null;
+      const tip = `${vintage}: ${count} garrafa${count > 1 ? 's' : ''}${age !== null ? ` (${age} anos)` : ''}`;
+
+      bars += `
+        <g class="chart-bar">
+          <title>${tip}</title>
+          <rect x="${x}" y="${y}" width="${barW}" height="${bh}"
+                fill="${col}" rx="2" opacity="0.9"/>
+          <text x="${x + barW/2}" y="${y - 5}" text-anchor="middle"
+                font-size="9" fill="${col}">${count}</text>
+        </g>`;
+
+      // Rotated x label
+      xLabels += `
+        <text x="${x + barW/2}" y="${chartH + 12}"
+              text-anchor="end"
+              transform="rotate(-45 ${x + barW/2} ${chartH + 12})"
+              font-size="9" fill="rgba(176,144,128,0.7)">${vintage}</text>`;
+    });
+
+    const svg = `
+      <div class="chart-wrap">
+        <div class="chart-svg-wrap">
+          <svg width="${svgW}" height="${svgH}" xmlns="http://www.w3.org/2000/svg">
+            ${yLabels}
+            <line x1="${padL}" y1="0" x2="${padL}" y2="${chartH}"
+                  stroke="rgba(201,168,76,0.2)" stroke-width="1"/>
+            <line x1="${padL}" y1="${chartH}" x2="${svgW - padR}" y2="${chartH}"
+                  stroke="rgba(201,168,76,0.2)" stroke-width="1"/>
+            ${bars}
+            ${xLabels}
+          </svg>
+        </div>
+      </div>
+      <div class="chart-legend">
+        <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#e03050"></div>≥ 20 anos — abrir urgente</div>
+        <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#e88030"></div>12–19 anos — abrir em breve</div>
+        <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#c9a84c"></div>7–11 anos — no ponto</div>
+        <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#3a9040"></div>3–6 anos — jovem</div>
+        <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#4090c0"></div>0–2 anos — muito jovem</div>
+      </div>`;
+
+    // Find most urgent vintages
+    const urgent = sorted.filter(([v]) => {
+      const age = currentYear - parseInt(v);
+      return !isNaN(age) && age >= 20;
+    });
+
+    const urgentText = urgent.length
+      ? `<div class="chart-urgency-label">⚠ Safras que precisam ser abertas com urgência: ${
+          urgent.map(([v, c]) => `<strong>${v}</strong> (${c} garrafa${c > 1 ? 's' : ''})`).join(', ')
+        }</div>`
+      : `<div class="chart-urgency-label">✓ Nenhuma safra com urgência crítica no momento.</div>`;
+
+    document.getElementById('chart-container').innerHTML = svg + urgentText;
+    document.getElementById('chart-modal-pos').textContent =
+      `${total} garrafa${total !== 1 ? 's' : ''} · ${sorted.length} safra${sorted.length !== 1 ? 's' : ''}`;
+    document.getElementById('chart-modal').classList.add('active');
+  }
+
+  // ── Help ──
+  function showHelp() {
+    document.getElementById('help-modal').classList.add('active');
+  }
+
+  // ── Close on overlay click ──
+  ['wine-modal','transfer-modal','help-modal','chart-modal','login-modal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', function(e) {
+      if (e.target === this) closeModal(id);
+    });
+  });
+
+  document.getElementById('new-score-value').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') addScore();
+  });
+
+  // Init — carrega dados salvos automaticamente
+  if (loadFromStorage()) {
+    activeCellarIdx = 0;
+    document.getElementById('setup-screen').style.display = 'none';
+    document.getElementById('cellar-screen').style.display = 'block';
+    renderCellar();
+    applyZoom();
+  } else {
+    refreshSetupList();
+  }
+
+  // Registrar Service Worker (PWA)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/minha-adega/sw.js', { scope: '/minha-adega/' }).catch(() => {});
+  }
+</script>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import { getFirestore, doc, setDoc, onSnapshot }
+    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyDTjkyb_0H5Rhn8sT-XPFak1mssvyNwtzE",
+    authDomain:        "adegas-db2a4.firebaseapp.com",
+    projectId:         "adegas-db2a4",
+    storageBucket:     "adegas-db2a4.firebasestorage.app",
+    messagingSenderId: "486977961125",
+    appId:             "1:486977961125:web:e1b4bde92f19dcd5c0a14c"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  let unsubscribeSnapshot = null;
+  let currentUid = null;
+  let isSyncing  = false;
+
+  // ── Auth state ──
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      currentUid = user.uid;
+      document.getElementById('fb-user-name').textContent = user.email;
+      document.getElementById('fb-btn-login').style.display  = 'none';
+      document.getElementById('fb-btn-logout').style.display = 'inline-flex';
+      document.getElementById('fb-status').textContent = '☁ Sincronizado';
+      document.getElementById('fb-status').style.color = 'rgba(150,220,150,0.8)';
+      startSync(user.uid);
+    } else {
+      currentUid = null;
+      document.getElementById('fb-user-name').textContent = '';
+      document.getElementById('fb-btn-login').style.display  = 'inline-flex';
+      document.getElementById('fb-btn-logout').style.display = 'none';
+      document.getElementById('fb-status').textContent = '☁ Offline';
+      document.getElementById('fb-status').style.color = 'var(--text-muted)';
+      if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
+    }
+  });
+
+  // ── Open login modal ──
+  document.getElementById('fb-btn-login').addEventListener('click', () => {
+    document.getElementById('login-modal').classList.add('active');
+    document.getElementById('login-email').focus();
+  });
+
+  // ── Logout ──
+  document.getElementById('fb-btn-logout').addEventListener('click', async () => {
+    await signOut(auth);
+  });
+
+  // ── Login form submit ──
+  window.firebaseLogin = async function(mode) {
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errorEl  = document.getElementById('login-error');
+    errorEl.textContent = '';
+
+    if (!email || !password) {
+      errorEl.textContent = 'Preencha e-mail e senha.';
+      return;
+    }
+
+    const btn = document.getElementById('login-submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Aguarde...';
+
+    try {
+      if (mode === 'register') {
+        await createUserWithEmailAndPassword(auth, email, password);
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+      }
+      document.getElementById('login-modal').classList.remove('active');
+      document.getElementById('login-password').value = '';
+    } catch(e) {
+      const msgs = {
+        'auth/email-already-in-use':   'Este e-mail já está cadastrado. Clique em Entrar.',
+        'auth/invalid-email':          'E-mail inválido.',
+        'auth/weak-password':          'Senha fraca. Use pelo menos 6 caracteres.',
+        'auth/user-not-found':         'E-mail não encontrado. Clique em Criar conta.',
+        'auth/wrong-password':         'Senha incorreta.',
+        'auth/invalid-credential':     'E-mail ou senha incorretos.',
+        'auth/too-many-requests':      'Muitas tentativas. Aguarde alguns minutos.',
+      };
+      errorEl.textContent = msgs[e.code] || ('Erro: ' + e.code);
+    }
+    btn.disabled = false;
+    btn.textContent = mode === 'register' ? 'Criar conta' : 'Entrar';
+  };
+
+  // ── Real-time sync ──
+  function startSync(uid) {
+    const ref = doc(db, 'adegas', uid);
+    unsubscribeSnapshot = onSnapshot(ref, snapshot => {
+      if (isSyncing) return;
+      if (!snapshot.exists()) return;
+      const remote = snapshot.data();
+      if (remote.version === 2 && Array.isArray(remote.cellars)) {
+        const localStr  = JSON.stringify(window._adegaAllCellars || []);
+        const remoteStr = JSON.stringify(remote.cellars);
+        if (localStr !== remoteStr) {
+          window._adegaAllCellars = remote.cellars;
+          if (typeof window.firebaseReload === 'function') window.firebaseReload(remote.cellars);
+          document.getElementById('fb-status').textContent = '☁ Sincronizado';
+          document.getElementById('fb-status').style.color = 'rgba(150,220,150,0.8)';
+        }
+      }
+    });
+  }
+
+  // ── Save to Firestore ──
+  window.saveToFirebase = async function(cellars) {
+    if (!currentUid) return;
+    isSyncing = true;
+    try {
+      await setDoc(doc(db, 'adegas', currentUid), { version: 2, cellars, updatedAt: Date.now() });
+      document.getElementById('fb-status').textContent = '☁ Sincronizado';
+      document.getElementById('fb-status').style.color = 'rgba(150,220,150,0.8)';
+    } catch(e) {
+      document.getElementById('fb-status').textContent = '☁ Erro ao salvar';
+      document.getElementById('fb-status').style.color = 'rgba(255,120,120,0.8)';
+      console.warn('Firestore save error:', e);
+    }
+    setTimeout(() => { isSyncing = false; }, 1000);
+  };
+</script>
+</body>
+</html>
