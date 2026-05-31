@@ -695,6 +695,67 @@
   }
   .btn-copy:hover { background: rgba(201,168,76,0.1); border-color: var(--gold); }
 
+  /* History list */
+  .history-empty {
+    font-size: 0.75rem; color: var(--text-muted);
+    letter-spacing: 0.08em; text-align: center;
+    padding: 2rem 0;
+  }
+  .history-item {
+    display: flex; align-items: flex-start; gap: 1rem;
+    padding: 0.9rem 0;
+    border-bottom: 1px solid rgba(201,168,76,0.1);
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-dot {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    margin-top: 2px;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.4);
+  }
+  .history-info { flex: 1; min-width: 0; }
+  .history-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.05rem; color: var(--gold-light);
+    margin-bottom: 0.25rem; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .history-meta {
+    font-size: 0.6rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-muted);
+    line-height: 1.8;
+  }
+  .history-notes {
+    font-size: 0.72rem; color: rgba(176,144,128,0.7);
+    margin-top: 0.3rem; line-height: 1.5;
+    font-style: italic;
+  }
+  .history-date {
+    font-size: 0.58rem; color: var(--text-muted);
+    letter-spacing: 0.08em; white-space: nowrap;
+    opacity: 0.6; flex-shrink: 0;
+  }
+  .history-filter {
+    display: flex; gap: 0.5rem; margin-bottom: 1.2rem; flex-wrap: wrap;
+  }
+  .history-search {
+    flex: 1; min-width: 150px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(201,168,76,0.22); border-radius: 1px;
+    color: var(--cream); font-family: 'Montserrat', sans-serif;
+    font-size: 0.78rem; padding: 0.5rem 0.8rem; outline: none;
+    transition: border-color 0.25s;
+  }
+  .history-search:focus { border-color: rgba(201,168,76,0.55); }
+  .history-search::placeholder { color: rgba(176,144,128,0.45); }
+  .history-clear {
+    padding: 0.5rem 0.9rem; background: transparent;
+    border: 1px solid rgba(255,80,80,0.25); border-radius: 1px;
+    color: rgba(255,120,120,0.7); font-family: 'Montserrat', sans-serif;
+    font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .history-clear:hover { background: rgba(255,80,80,0.08); color: rgba(255,140,140,0.9); }
+
   /* Chart styles */
   .chart-wrap { width: 100%; overflow-x: auto; padding-bottom: 0.5rem; }
   .chart-svg-wrap { min-width: 320px; }
@@ -873,10 +934,11 @@
           <button id="fb-btn-logout" class="btn-secondary" style="display:none">Sair</button>
         </div>
         <button class="btn-secondary btn-highlight" onclick="exportData()">⬇ Exportar</button>
-        <label class="btn-secondary btn-highlight" style="cursor:pointer">
+        <label class="btn-secondary btn-highlight" style="cursor:pointer;height:34px;padding:0 1rem;display:inline-flex;align-items:center">
           ⬆ Importar
           <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)">
         </label>
+        <button class="btn-secondary" onclick="showHistory()">📋 Histórico</button>
         <button class="btn-secondary" onclick="showChart()">📊 Safras</button>
         <button class="btn-secondary" onclick="goToSetup()">⇄ Adegas</button>
         <button class="btn-secondary" onclick="showHelp()">? Ajuda</button>
@@ -1001,6 +1063,20 @@
     <div class="move-banner-inner">
       <span id="copy-banner-text">Clique em um espaço vazio para copiar o vinho</span>
       <button class="move-cancel-btn" onclick="cancelCopy()">✕ Cancelar</button>
+    </div>
+  </div>
+
+  <!-- ══ HISTORY MODAL ══ -->
+  <div class="modal-overlay" id="history-modal">
+    <div class="modal" style="max-width:640px">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">Histórico de Consumo</div>
+          <div class="modal-pos" id="history-modal-pos"></div>
+        </div>
+        <button class="btn-close" onclick="closeModal('history-modal')">✕</button>
+      </div>
+      <div id="history-container"></div>
     </div>
   </div>
 
@@ -1189,6 +1265,7 @@
   function normalizeCellars(cellars) {
     return cellars.map(cellar => ({
       ...cellar,
+      history: Array.isArray(cellar.history) ? cellar.history : [],
       wines: Object.fromEntries(
         Object.entries(cellar.wines || {}).map(([k, w]) => [k, normalizeWine(w)])
       )
@@ -1503,12 +1580,21 @@
     renderCellar();
   }
 
-  // ── Consume (animated removal) ──
+  // ── Consume (animated removal + save to history) ──
   function consumeWine() {
     if (!currentSlot || !cd().wines[currentSlot]) return;
-    const key = currentSlot;
+    const key  = currentSlot;
+    const wine = cd().wines[key];
+
+    // Save to history before removing
+    if (!cd().history) cd().history = [];
+    cd().history.unshift({
+      ...JSON.parse(JSON.stringify(wine)),
+      consumedAt: new Date().toISOString(),
+      cellarName: cd().name
+    });
+
     closeModal('wine-modal');
-    // Find the slot element and animate
     const slot = document.querySelector(`.bottle-slot[data-key="${key}"]`);
     if (slot) {
       slot.classList.add('consuming');
@@ -1523,6 +1609,79 @@
       saveToStorage();
       renderCellar();
     }
+  }
+
+  // ── History ──
+  const TYPE_COLORS_H = { tinto:'#c03050', branco:'#d4a820', rose:'#d04060', espumante:'#3a9040', doce:'#805030' };
+  const TYPE_LABELS_H = { tinto:'Tinto', branco:'Branco', rose:'Rosé', espumante:'Espumante', doce:'Doce' };
+  const ABBR_H = { parker:'RP', spectator:'WS', enthusiast:'WE' };
+
+  function showHistory() {
+    const history = cd().history || [];
+    document.getElementById('history-modal-pos').textContent =
+      `${history.length} vinho${history.length !== 1 ? 's' : ''} consumido${history.length !== 1 ? 's' : ''}`;
+    renderHistoryList(history, '');
+    document.getElementById('history-modal').classList.add('active');
+  }
+
+  function renderHistoryList(history, searchTerm) {
+    const container = document.getElementById('history-container');
+    const filtered  = searchTerm
+      ? history.filter(w =>
+          w.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (w.vintage && String(w.vintage).includes(searchTerm)) ||
+          (w.country && w.country.toLowerCase().includes(searchTerm.toLowerCase())))
+      : history;
+
+    let html = `
+      <div class="history-filter">
+        <input class="history-search" type="text" placeholder="Buscar por nome, safra ou país..."
+          value="${esc(searchTerm)}"
+          oninput="renderHistoryList(cd().history||[], this.value)">
+        ${history.length ? `<button class="history-clear" onclick="clearHistory()">🗑 Limpar histórico</button>` : ''}
+      </div>`;
+
+    if (!history.length) {
+      html += `<div class="history-empty">Nenhum vinho consumido ainda.<br>Ao marcar um vinho como "🍷 Consumido", ele aparecerá aqui.</div>`;
+    } else if (!filtered.length) {
+      html += `<div class="history-empty">Nenhum resultado para "${esc(searchTerm)}".</div>`;
+    } else {
+      filtered.forEach(wine => {
+        const color  = TYPE_COLORS_H[wine.type] || '#806040';
+        const label  = TYPE_LABELS_H[wine.type]  || wine.type || '';
+        const date   = wine.consumedAt ? new Date(wine.consumedAt).toLocaleDateString('pt-BR') : '';
+        const scores = wine.scores && wine.scores.length
+          ? wine.scores.map(s => `${ABBR_H[s.critic] || s.critic} ${s.value}`).join(' · ')
+          : '';
+        const meta   = [
+          label,
+          wine.vintage || '',
+          wine.country || '',
+          wine.store   ? `Compra: ${wine.store}` : '',
+          scores
+        ].filter(Boolean).join(' · ');
+
+        html += `
+          <div class="history-item">
+            <div class="history-dot" style="background:radial-gradient(circle at 35% 30%, ${color}cc, ${color}44)"></div>
+            <div class="history-info">
+              <div class="history-name">${esc(wine.name)}</div>
+              <div class="history-meta">${esc(meta)}</div>
+              ${wine.notes ? `<div class="history-notes">${esc(wine.notes)}</div>` : ''}
+            </div>
+            <div class="history-date">${date}</div>
+          </div>`;
+      });
+    }
+    container.innerHTML = html;
+  }
+
+  function clearHistory() {
+    if (!confirm('Apagar todo o histórico de consumo? Esta ação não pode ser desfeita.')) return;
+    cd().history = [];
+    saveToStorage();
+    renderHistoryList([], '');
+    document.getElementById('history-modal-pos').textContent = '0 vinhos consumidos';
   }
 
   // ── Remove (no animation) ──
@@ -2017,7 +2176,7 @@
   }
 
   // ── Close on overlay click ──
-  ['wine-modal','transfer-modal','help-modal','chart-modal','login-modal'].forEach(id => {
+  ['wine-modal','transfer-modal','help-modal','chart-modal','login-modal','history-modal'].forEach(id => {
     document.getElementById(id).addEventListener('click', function(e) {
       if (e.target === this) closeModal(id);
     });
