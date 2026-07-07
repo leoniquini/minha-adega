@@ -184,13 +184,25 @@
   /* Bottom controls bar */
   .bottom-controls {
     display: flex; align-items: center; justify-content: space-between;
-    margin-top: 1.2rem; padding: 1rem 1.5rem;
+    margin-top: 1.2rem; padding: 0.8rem 1rem;
     background: rgba(26,10,14,0.6);
     border: 1px solid rgba(201,168,76,0.15); border-radius: 2px;
-    flex-wrap: wrap; gap: 0.8rem;
+    flex-wrap: wrap; gap: 0.6rem;
   }
   .bottom-controls-right {
-    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+    display: flex; align-items: center; gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+  @media (max-width: 768px) {
+    .bottom-controls { flex-direction: column; align-items: stretch; }
+    .bottom-controls-right {
+      overflow-x: auto; flex-wrap: nowrap;
+      padding-bottom: 4px;
+    }
+    .bottom-controls-right::-webkit-scrollbar { height: 3px; }
+    .bottom-controls-right::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.3); }
+    .fb-bar { flex-wrap: wrap; }
+    .btn-secondary { white-space: nowrap; flex-shrink: 0; }
   }
 
   .zoom-controls {
@@ -1263,13 +1275,22 @@
   }
 
   function normalizeCellars(cellars) {
-    return cellars.map(cellar => ({
-      ...cellar,
-      history: Array.isArray(cellar.history) ? cellar.history : [],
-      wines: Object.fromEntries(
-        Object.entries(cellar.wines || {}).map(([k, w]) => [k, normalizeWine(w)])
-      )
-    }));
+    return cellars.map(cellar => {
+      // Normalize history — Firebase may return as object {0:.., 1:..} instead of array
+      let history = [];
+      if (Array.isArray(cellar.history)) {
+        history = cellar.history;
+      } else if (cellar.history && typeof cellar.history === 'object') {
+        history = Object.values(cellar.history);
+      }
+      return {
+        ...cellar,
+        history,
+        wines: Object.fromEntries(
+          Object.entries(cellar.wines || {}).map(([k, w]) => [k, normalizeWine(w)])
+        )
+      };
+    });
   }
 
   // ── Setup screen ──
@@ -1587,7 +1608,7 @@
     const wine = cd().wines[key];
 
     // Save to history before removing
-    if (!cd().history) cd().history = [];
+    if (!Array.isArray(cd().history)) cd().history = [];
     cd().history.unshift({
       ...JSON.parse(JSON.stringify(wine)),
       consumedAt: new Date().toISOString(),
