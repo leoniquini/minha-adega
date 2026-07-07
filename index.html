@@ -707,6 +707,16 @@
   }
   .btn-copy:hover { background: rgba(201,168,76,0.1); border-color: var(--gold); }
 
+  .history-action-btn {
+    background: none; border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 1px; color: var(--text-muted);
+    font-size: 0.72rem; width: 26px; height: 26px;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .history-action-btn:hover { background: rgba(201,168,76,0.1); color: var(--gold); border-color: rgba(201,168,76,0.5); }
+  .history-del-btn:hover { background: rgba(255,80,80,0.08); color: rgba(255,120,120,0.9); border-color: rgba(255,80,80,0.4); }
+
   /* History list */
   .history-empty {
     font-size: 0.75rem; color: var(--text-muted);
@@ -1696,6 +1706,8 @@
     const key  = currentSlot;
     const wine = cd().wines[key];
 
+    if (!confirm(`Marcar "${wine.name}" como consumido?\n\nEle será removido da adega e salvo no histórico.`)) return;
+
     // Save to history before removing
     if (!Array.isArray(cd().history)) cd().history = [];
     cd().history.unshift({
@@ -1801,7 +1813,9 @@
     } else if (!filtered.length) {
       html += `<div class="history-empty">Nenhum resultado para "${esc(searchTerm)}".</div>`;
     } else {
-      filtered.forEach(wine => {
+      filtered.forEach((wine, filteredIdx) => {
+        // Find the real index in the full history array
+        const realIdx = history.indexOf(wine);
         const color  = TYPE_COLORS_H[wine.type] || '#806040';
         const label  = TYPE_LABELS_H[wine.type]  || wine.type || '';
         const date   = wine.consumedAt ? new Date(wine.consumedAt).toLocaleDateString('pt-BR') : '';
@@ -1824,11 +1838,91 @@
               <div class="history-meta">${esc(meta)}</div>
               ${wine.notes ? `<div class="history-notes">${esc(wine.notes)}</div>` : ''}
             </div>
-            <div class="history-date">${date}</div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem;flex-shrink:0">
+              <div class="history-date">${date}</div>
+              <div style="display:flex;gap:0.3rem">
+                <button class="history-action-btn" onclick="editHistoryItem(${realIdx})" title="Editar">✏</button>
+                <button class="history-action-btn history-del-btn" onclick="deleteHistoryItem(${realIdx})" title="Excluir">✕</button>
+              </div>
+            </div>
           </div>`;
       });
     }
     container.innerHTML = html;
+  }
+
+  function deleteHistoryItem(idx) {
+    const history = cd().history || [];
+    const wine = history[idx];
+    if (!wine) return;
+    if (!confirm(`Remover "${wine.name}" do histórico?`)) return;
+    history.splice(idx, 1);
+    saveToStorage();
+    document.getElementById('history-modal-pos').textContent =
+      `${history.length} vinho${history.length !== 1 ? 's' : ''} consumido${history.length !== 1 ? 's' : ''}`;
+    renderHistoryList(history, '');
+  }
+
+  function editHistoryItem(idx) {
+    const history = cd().history || [];
+    const wine = history[idx];
+    if (!wine) return;
+
+    // Show the add form populated with this wine's data
+    const form = document.getElementById('history-add-form');
+    form.style.display = 'block';
+
+    // Change form title and button to indicate editing
+    form.querySelector('div[style*="font-size"]').textContent = `Editar vinho consumido`;
+    const saveBtn = form.querySelector('button.btn-save');
+    saveBtn.textContent = 'Salvar alterações';
+    saveBtn.onclick = () => saveHistoryEdit(idx);
+
+    document.getElementById('h-name').value    = wine.name    || '';
+    document.getElementById('h-vintage').value = wine.vintage ? String(wine.vintage) : '';
+    document.getElementById('h-country').value = wine.country || '';
+    document.getElementById('h-type').value    = wine.type    || 'tinto';
+    document.getElementById('h-store').value   = wine.store   || '';
+    document.getElementById('h-notes').value   = wine.notes   || '';
+    document.getElementById('h-date').value    = wine.consumedAt
+      ? new Date(wine.consumedAt).toISOString().slice(0,10)
+      : new Date().toISOString().slice(0,10);
+
+    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function saveHistoryEdit(idx) {
+    const name = document.getElementById('h-name').value.trim();
+    if (!name) { document.getElementById('h-name').focus(); return; }
+
+    const history = cd().history || [];
+    const dateVal = document.getElementById('h-date').value;
+    const existing = history[idx] || {};
+
+    history[idx] = {
+      ...existing,
+      name,
+      vintage:    document.getElementById('h-vintage').value,
+      country:    document.getElementById('h-country').value,
+      type:       document.getElementById('h-type').value,
+      store:      document.getElementById('h-store').value,
+      notes:      document.getElementById('h-notes').value.trim(),
+      consumedAt: dateVal ? new Date(dateVal).toISOString() : (existing.consumedAt || new Date().toISOString())
+    };
+
+    saveToStorage();
+
+    // Reset form back to "add" mode
+    const form = document.getElementById('history-add-form');
+    form.style.display = 'none';
+    form.querySelector('div[style*="font-size"]').textContent = 'Adicionar vinho consumido';
+    const saveBtn = form.querySelector('button.btn-save');
+    saveBtn.textContent = 'Salvar no histórico';
+    saveBtn.onclick = () => addToHistoryManual();
+
+    document.getElementById('history-modal-pos').textContent =
+      `${history.length} vinho${history.length !== 1 ? 's' : ''} consumido${history.length !== 1 ? 's' : ''}`;
+    renderHistoryList(history, '');
   }
 
   function clearHistory() {
