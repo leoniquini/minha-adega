@@ -1088,6 +1088,94 @@
         </div>
         <button class="btn-close" onclick="closeModal('history-modal')">✕</button>
       </div>
+      <!-- Manual entry form (collapsed by default) -->
+      <div id="history-add-form" style="display:none;margin-bottom:1.2rem;padding:1rem;background:rgba(255,255,255,0.03);border:1px solid rgba(201,168,76,0.2);border-radius:2px">
+        <div style="font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem">Adicionar vinho consumido</div>
+        <div class="row-cols" style="margin-bottom:0.8rem">
+          <div>
+            <label>Nome do vinho</label>
+            <input type="text" id="h-name" placeholder="Ex.: Château Margaux">
+          </div>
+          <div>
+            <label>Safra</label>
+            <select id="h-vintage"><option value="">Selecione...</option></select>
+          </div>
+        </div>
+        <div class="row-cols" style="margin-bottom:0.8rem">
+          <div>
+            <label>País</label>
+            <select id="h-country">
+              <option value="">Selecione...</option>
+              <optgroup label="Europa">
+                <option value="França">🇫🇷 França</option>
+                <option value="Itália">🇮🇹 Itália</option>
+                <option value="Espanha">🇪🇸 Espanha</option>
+                <option value="Portugal">🇵🇹 Portugal</option>
+                <option value="Alemanha">🇩🇪 Alemanha</option>
+                <option value="Áustria">🇦🇹 Áustria</option>
+                <option value="Grécia">🇬🇷 Grécia</option>
+                <option value="Hungria">🇭🇺 Hungria</option>
+                <option value="Suíça">🇨🇭 Suíça</option>
+                <option value="Geórgia">🇬🇪 Geórgia</option>
+                <option value="Croácia">🇭🇷 Croácia</option>
+                <option value="Eslovênia">🇸🇮 Eslovênia</option>
+                <option value="Bulgária">🇧🇬 Bulgária</option>
+                <option value="Romênia">🇷🇴 Romênia</option>
+              </optgroup>
+              <optgroup label="Américas">
+                <option value="Brasil">🇧🇷 Brasil</option>
+                <option value="Argentina">🇦🇷 Argentina</option>
+                <option value="Chile">🇨🇱 Chile</option>
+                <option value="Uruguay">🇺🇾 Uruguay</option>
+                <option value="Estados Unidos">🇺🇸 Estados Unidos</option>
+                <option value="México">🇲🇽 México</option>
+              </optgroup>
+              <optgroup label="Oceania">
+                <option value="Austrália">🇦🇺 Austrália</option>
+                <option value="Nova Zelândia">🇳🇿 Nova Zelândia</option>
+              </optgroup>
+              <optgroup label="África e Oriente Médio">
+                <option value="África do Sul">🇿🇦 África do Sul</option>
+                <option value="Israel">🇮🇱 Israel</option>
+                <option value="Líbano">🇱🇧 Líbano</option>
+                <option value="Marrocos">🇲🇦 Marrocos</option>
+              </optgroup>
+            </select>
+          </div>
+          <div>
+            <label>Tipo</label>
+            <select id="h-type">
+              <option value="tinto">🍷 Tinto</option>
+              <option value="branco">🥂 Branco</option>
+              <option value="rose">🌸 Rosé</option>
+              <option value="espumante">✨ Espumante</option>
+              <option value="doce">🍯 Doce</option>
+            </select>
+          </div>
+        </div>
+        <div class="row-cols" style="margin-bottom:0.8rem">
+          <div>
+            <label>Local de compra</label>
+            <input type="text" id="h-store" placeholder="Ex.: Mistral">
+          </div>
+          <div>
+            <label>Data de consumo</label>
+            <input type="date" id="h-date">
+          </div>
+        </div>
+        <div style="margin-bottom:0.8rem">
+          <label>Anotações</label>
+          <textarea id="h-notes" rows="2" placeholder="Observações sobre o vinho..."></textarea>
+        </div>
+        <div style="display:flex;gap:0.6rem">
+          <button class="btn-save" style="flex:1" onclick="addToHistoryManual()">Salvar no histórico</button>
+          <button class="btn-remove" onclick="document.getElementById('history-add-form').style.display='none'">Cancelar</button>
+        </div>
+      </div>
+      <!-- Add button -->
+      <div style="margin-bottom:1rem;text-align:right">
+        <button class="btn-secondary btn-highlight" onclick="toggleHistoryForm()">+ Adicionar manualmente</button>
+      </div>
       <div id="history-container"></div>
     </div>
   </div>
@@ -1239,24 +1327,25 @@
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  // ── Vintage dropdowns (modal + filter) ──
+  // ── Vintage dropdowns (modal + filter + history) ──
   (function() {
-    const modalSel  = document.getElementById('w-vintage');
-    const filterSel = document.getElementById('f-vintage');
+    const modalSel   = document.getElementById('w-vintage');
+    const filterSel  = document.getElementById('f-vintage');
+    const historySel = document.getElementById('h-vintage');
     const cur = new Date().getFullYear();
 
     // "Sem Safra" option
-    [modalSel, filterSel].forEach(sel => {
+    [modalSel, filterSel, historySel].forEach(sel => {
       const o = document.createElement('option');
       o.value = 'Sem Safra'; o.textContent = 'Sem Safra';
       sel.appendChild(o);
     });
 
     for (let y = cur; y >= 1900; y--) {
-      const o1 = document.createElement('option');
-      o1.value = y; o1.textContent = y; modalSel.appendChild(o1);
-      const o2 = document.createElement('option');
-      o2.value = y; o2.textContent = y; filterSel.appendChild(o2);
+      [modalSel, filterSel, historySel].forEach(sel => {
+        const o = document.createElement('option');
+        o.value = y; o.textContent = y; sel.appendChild(o);
+      });
     }
   })();
 
@@ -1636,6 +1725,51 @@
   const TYPE_COLORS_H = { tinto:'#c03050', branco:'#d4a820', rose:'#d04060', espumante:'#3a9040', doce:'#805030' };
   const TYPE_LABELS_H = { tinto:'Tinto', branco:'Branco', rose:'Rosé', espumante:'Espumante', doce:'Doce' };
   const ABBR_H = { parker:'RP', spectator:'WS', enthusiast:'WE' };
+
+  function toggleHistoryForm() {
+    const form = document.getElementById('history-add-form');
+    const isHidden = form.style.display === 'none';
+    form.style.display = isHidden ? 'block' : 'none';
+    if (isHidden) {
+      document.getElementById('h-name').value    = '';
+      document.getElementById('h-vintage').value = '';
+      document.getElementById('h-country').value = '';
+      document.getElementById('h-type').value    = 'tinto';
+      document.getElementById('h-store').value   = '';
+      document.getElementById('h-notes').value   = '';
+      document.getElementById('h-date').value    = new Date().toISOString().slice(0,10);
+      document.getElementById('h-name').focus();
+    }
+  }
+
+  function addToHistoryManual() {
+    const name = document.getElementById('h-name').value.trim();
+    if (!name) { document.getElementById('h-name').focus(); return; }
+
+    const dateVal = document.getElementById('h-date').value;
+    const entry = {
+      name,
+      vintage:    document.getElementById('h-vintage').value,
+      country:    document.getElementById('h-country').value,
+      type:       document.getElementById('h-type').value,
+      store:      document.getElementById('h-store').value,
+      notes:      document.getElementById('h-notes').value.trim(),
+      scores:     [],
+      consumedAt: dateVal ? new Date(dateVal).toISOString() : new Date().toISOString(),
+      cellarName: cd().name,
+      manual:     true
+    };
+
+    if (!Array.isArray(cd().history)) cd().history = [];
+    cd().history.unshift(entry);
+    saveToStorage();
+
+    document.getElementById('history-add-form').style.display = 'none';
+    const history = cd().history;
+    document.getElementById('history-modal-pos').textContent =
+      `${history.length} vinho${history.length !== 1 ? 's' : ''} consumido${history.length !== 1 ? 's' : ''}`;
+    renderHistoryList(history, '');
+  }
 
   function showHistory() {
     const history = cd().history || [];
